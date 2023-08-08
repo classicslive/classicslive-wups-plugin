@@ -44,7 +44,7 @@ INCLUDES	:=	source source/libretro-common/include
 CFLAGS	:=	-Wall -O2 -ffunction-sections \
 			$(MACHDEP)
 
-GIT_VERSION := "ok"
+GIT_VERSION := "$(shell git describe --abbrev=8 --dirty --always --tags)"
 
 CFLAGS	+=	$(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__ -DDISTRO=\"$(DISTRO)\" \
             -DCL_HAVE_EDITOR=0 -DCL_HAVE_FILESYSTEM=0 -DCL_WUPS_DEBUG=1 -DGIT_VERSION=\"$(GIT_VERSION)\"
