@@ -1,0 +1,6 @@
+[submodule "source/classicslive-integration"]
+	path = source/classicslive-integration
+	url = https://github.com/celerizer/classicslive-integration
+[submodule "source/libretro-common"]
+	path = source/libretro-common
+	url = https://github.com/libretro/libretro-common
