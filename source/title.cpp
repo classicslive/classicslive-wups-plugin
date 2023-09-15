@@ -2897,7 +2897,7 @@ static cl_wups_title_t cl_wups_titles[] =
  */
 bool title_is_n64(void)
 {
-  return (*((unsigned*)CL_WUPS_N64_RAMPTR) & 0xFFFF8000) == 0x3c1a8000;
+  return (*((uint32_t*)CL_WUPS_N64_RAMPTR) & 0xFFFF8000) == 0x3c1a8000;
 }
 
 unsigned title_get_system(uint64_t title_id)

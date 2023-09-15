@@ -1,0 +1,10 @@
+{
+    "storageitems": {
+        "enabled": 1,
+        "language": "en_US",
+        "network_notifications": 1,
+        "password": "password",
+        "sync_method": 0,
+        "username": "username"
+    }
+}

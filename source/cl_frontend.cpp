@@ -127,7 +127,7 @@ void cl_fe_network_post(const char *url, char *data,
   curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, data);
   curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, cl_wups_network_cb); 
   curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&chunk);
-  curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "cl_wups using curl/1.0");
+  curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "cl_wups " GIT_VERSION " using curl/1.0");
   response_code = curl_easy_perform(curl_handle);
   curl_easy_cleanup(curl_handle);
 
@@ -197,9 +197,18 @@ bool cl_fe_user_data(cl_user_t *user, unsigned index)
 
   WUPS_OpenStorage();
 
-  WUPS_GetString(nullptr, "username", user->username, sizeof(user->username));
-  WUPS_GetString(nullptr, "password", user->password, sizeof(user->password));
-  WUPS_GetString(nullptr, "language", user->language, sizeof(user->language));
+  if (WUPS_GetString(nullptr, "language", user->language, sizeof(user->language)))
+  {
+    WUPS_StoreString(nullptr, "language", "en_US");
+    snprintf(user->language, sizeof(user->language), "%s", "en_US");
+  }
+  if (WUPS_GetString(nullptr, "username", user->username, sizeof(user->username)) ||
+      WUPS_GetString(nullptr, "password", user->password, sizeof(user->password)))
+  {
+    cl_message(CL_MSG_ERROR, "Please provide your Classics Live account credentials in "
+                             "plugins/config/classicslive.json");
+    return false;
+  }
 
   WUPS_CloseStorage();
 

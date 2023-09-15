@@ -52,7 +52,7 @@ WUPS_GET_CONFIG()
   WUPS_OpenStorage();
 
   WUPSConfigHandle config;
-  WUPSConfig_CreateHandled(&config, "Classics Live client");
+  WUPSConfig_CreateHandled(&config, "Classics Live");
 
   WUPSConfigCategoryHandle setting;
   WUPSConfig_AddCategoryByNameHandled(config, "Settings", &setting);
@@ -88,11 +88,13 @@ WUPS_GET_CONFIG()
     wups_settings.network_notifications,
     bool_cb);
 
+  /* Set up the login info category. For now, it is read-only. */
   WUPSConfigCategoryHandle login;
   WUPSConfig_AddCategoryByNameHandled(config, "Login info", &login);
   cl_user_t user;
   cl_fe_user_data(&user, 0);
 
+  /* Display the username */
   ConfigItemMultipleValuesPair username[1];
   username[0].value = 0;
   username[0].valueName = user.username;
@@ -105,9 +107,14 @@ WUPS_GET_CONFIG()
     username,
     sizeof(username) / sizeof(username[0]),
     multiple_values_cb);
+
+  /* Display the password (masked with asterisks) */
   ConfigItemMultipleValuesPair password[1];
+  char hidden_pw[sizeof(user.password)];
+  for (unsigned i = 0; i < sizeof(hidden_pw); i++)
+    hidden_pw[i] = user.password[i] ? '*' : '\0';
   password[0].value = 0;
-  password[0].valueName = user.password;
+  password[0].valueName = hidden_pw;
   WUPSConfigItemMultipleValues_AddToCategoryHandled(
     config,
     login,
@@ -117,6 +124,8 @@ WUPS_GET_CONFIG()
     password,
     sizeof(password) / sizeof(password[0]),
     multiple_values_cb);
+
+  /* Display the language */
   ConfigItemMultipleValuesPair language[1];
   language[0].value = 0;
   language[0].valueName = user.language;

@@ -1,2 +1,6 @@
 # Ignore build directories
 /build/
+
+# Ignore final binary
+*.elf
+*.wps
