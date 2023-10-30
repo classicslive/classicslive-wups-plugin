@@ -47,7 +47,11 @@ CFLAGS	:=	-Wall -O2 -ffunction-sections \
 GIT_VERSION := "$(shell git describe --abbrev=8 --dirty --always --tags)"
 
 CFLAGS	+=	$(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__ -DDISTRO=\"$(DISTRO)\" \
-            -DCL_HAVE_EDITOR=0 -DCL_HAVE_FILESYSTEM=0 -DGIT_VERSION=\"$(GIT_VERSION)\"
+            -DCL_HAVE_EDITOR=0 \
+			-DCL_HAVE_FILESYSTEM=0 \
+			-DCL_HAVE_SSL=0 \
+			-DCL_WUPS_DEBUG=0 \
+			-DGIT_VERSION=\"$(GIT_VERSION)\"
 
 CXXFLAGS	:= $(CFLAGS) -std=c++20
 

@@ -106,10 +106,11 @@ static size_t cl_wups_network_cb(void *contents, size_t size, size_t nmemb, void
 {
   size_t realsize = size * nmemb;
   cl_wups_network_chunk_t *chunk = (cl_wups_network_chunk_t*)userp;
+  char *current_pos = &chunk->data[chunk->size];
 
-  memcpy(chunk->data, contents, realsize);
-  chunk->data[realsize] = '\0';
-  chunk->size = realsize;
+  memcpy(current_pos, contents, realsize);
+  chunk->size += realsize;
+  chunk->data[chunk->size] = '\0';
 
   return realsize;
 }
@@ -122,8 +123,12 @@ void cl_fe_network_post(const char *url, char *data,
   cl_wups_network_chunk_t chunk;
   cl_network_response_t response;
 
+  chunk.size = 0;
+
   curl_handle = curl_easy_init();
   curl_easy_setopt(curl_handle, CURLOPT_URL, CL_REQUEST_URL);
+  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0);
+  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYHOST, 0);
   curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, data);
   curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, cl_wups_network_cb); 
   curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&chunk);
