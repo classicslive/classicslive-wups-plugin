@@ -68,10 +68,11 @@ static int cl_wups_main(int argc, const char **argv)
 
   while (true)
   {
-    if (wups_settings.sync_method == CL_WUPS_SYNC_METHOD_TICKS)
+    /** @todo V-sync mode temporarily disabled */
+    // if (wups_settings.sync_method == CL_WUPS_SYNC_METHOD_TICKS)
       OSSleepTicks(OSNanosecondsToTicks(16666667));
-    else
-      GX2WaitForVsync();
+    // else
+    //   GX2WaitForVsync();
 
     /** @todo HACK! Implement new endianness type for the N64 situation */
     if (title_system == CL_WUPS_TITLE_N64)

@@ -14,9 +14,9 @@ extern "C"
 
 #include "config.h"
 
-cl_wups_settings_t wups_settings = { true, true, CL_WUPS_SYNC_METHOD_VSYNC };
+cl_wups_settings_t wups_settings = { true, true, CL_WUPS_SYNC_METHOD_TICKS };
 
-WUPS_USE_STORAGE("cl_wups");
+WUPS_USE_STORAGE("classicslive");
 
 void bool_cb(ConfigItemBoolean *item, bool value)
 {
