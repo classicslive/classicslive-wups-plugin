@@ -154,9 +154,8 @@ ON_APPLICATION_START()
 #endif
 }
 
-ON_APPLICATION_REQUESTS_EXIT()
+ON_APPLICATION_ENDS()
 {
   if (session.ready)
     cl_network_post("close", NULL, NULL);
-  //OSJoinThread(&thread, nullptr);
 }

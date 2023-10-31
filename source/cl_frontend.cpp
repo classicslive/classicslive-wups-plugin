@@ -161,7 +161,8 @@ void cl_fe_network_post(const char *url, char *data,
     response.error_code = response_code;
     response.error_msg = "Network error";
   }
-  callback(response);
+  if (callback)
+    callback(response);
 }
 
 typedef struct
