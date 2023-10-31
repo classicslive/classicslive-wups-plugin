@@ -122,17 +122,22 @@ void cl_fe_network_post(const char *url, char *data,
   CURLcode response_code;
   cl_wups_network_chunk_t chunk;
   cl_network_response_t response;
+  char user_agent[256];
+  auto curl_version = curl_version_info(CURLVERSION_NOW);
 
+  snprintf(user_agent, sizeof(user_agent), "cl_wups " GIT_VERSION " using curl/%s", curl_version->version);
   chunk.size = 0;
 
   curl_handle = curl_easy_init();
   curl_easy_setopt(curl_handle, CURLOPT_URL, CL_REQUEST_URL);
-  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0);
-  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYHOST, 0);
   curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, data);
   curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, cl_wups_network_cb); 
   curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&chunk);
-  curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "cl_wups " GIT_VERSION " using curl/1.0");
+  curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, user_agent);
+#if !CL_HAVE_SSL
+  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
+  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYHOST, 0L);
+#endif
   response_code = curl_easy_perform(curl_handle);
   curl_easy_cleanup(curl_handle);
 

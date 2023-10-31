@@ -49,7 +49,6 @@ GIT_VERSION := "$(shell git describe --abbrev=8 --dirty --always --tags)"
 CFLAGS	+=	$(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__ -DDISTRO=\"$(DISTRO)\" \
             -DCL_HAVE_EDITOR=0 \
 			-DCL_HAVE_FILESYSTEM=0 \
-			-DCL_HAVE_SSL=0 \
 			-DCL_WUPS_DEBUG=0 \
 			-DGIT_VERSION=\"$(GIT_VERSION)\"
 
@@ -68,7 +67,7 @@ CXXFLAGS += -DDEBUG -DVERBOSE_DEBUG -g
 CFLAGS += -DDEBUG -DVERBOSE_DEBUG -g
 endif
 
-LIBS	:= -lnotifications -lcurl -lmbedtls -lmbedx509 -lmbedcrypto -lz -lwups -lwut 
+LIBS	:= -lnotifications -lcurlwrapper -lwups -lwut 
 
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level
