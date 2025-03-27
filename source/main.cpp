@@ -32,6 +32,7 @@ static uint8_t stack[0x30000];
 static uint64_t title_id = 0;
 static uint64_t title_type = 0;
 static uint64_t title_system = 0;
+static int error = 0;
 
 static int cl_wups_main(int argc, const char **argv)
 {
@@ -107,9 +108,14 @@ static int cl_wups_main(int argc, const char **argv)
 
 INITIALIZE_PLUGIN()
 {
-  InitConfig();
   NotificationModule_InitLibrary();
-  curl_global_init(CURL_GLOBAL_ALL);
+  if (curl_global_init(CURL_GLOBAL_ALL))
+  {
+    cl_fe_display_message(CL_MSG_ERROR, "Could not initialize network. "
+                                        "Did you install CURLWrapperModule?");
+    error = 1;
+  }
+  InitConfig();
 }
 
 DEINITIALIZE_PLUGIN()
@@ -120,7 +126,7 @@ DEINITIALIZE_PLUGIN()
 
 ON_APPLICATION_START()
 {
-  if (!wups_settings.enabled)
+  if (!wups_settings.enabled || error)
     return;
 
   title_id = OSGetTitleID();
