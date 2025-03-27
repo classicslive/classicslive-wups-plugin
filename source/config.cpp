@@ -90,86 +90,112 @@ void InitConfig(void)
     DEBUG_FUNCTION_LINE_ERR("Failed to save storage %s (%d)", WUPSStorageAPI::GetStatusStr(storageRes).data(), storageRes);
 }
 
-WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle rootHandle)
+WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle root)
 {
   try
   {
-    WUPSConfigCategory root = WUPSConfigCategory(rootHandle);
+    /**
+     * ========================================================================
+     * Classics Live settings submenu -- Settings that change how the plugin functions
+     * ========================================================================
+     */
+    WUPSConfigCategoryHandle cat_settings;
+    WUPSConfigAPICreateCategoryOptionsV1 cat_settings_options = { .name = "Settings" };
+    WUPSConfigAPI_Category_Create(cat_settings_options, &cat_settings);
 
     /* Enable Classics Live */
-    root.add(WUPSConfigItemBoolean::Create(
+    WUPSConfigItemBoolean_AddToCategory(cat_settings,
       CL_WUPS_CONFIG_ENABLED,
       "Enable Classics Live",
       true,
       wups_settings.enabled,
-      &bool_cb));
+      &bool_cb);
 
     /* Show network notifications */
-    root.add(WUPSConfigItemBoolean::Create(
+    WUPSConfigItemBoolean_AddToCategory(cat_settings,
       CL_WUPS_CONFIG_NETWORK_NOTIFICATIONS,
       "Show network notifications",
       true,
       wups_settings.network_notifications,
-      &bool_cb));
+      &bool_cb);
 
     /* Sync method */
-    constexpr WUPSConfigItemMultipleValues::ValuePair syncs[] =
+    ConfigItemMultipleValuesPair syncs[] =
     {
       { CL_WUPS_SYNC_METHOD_TICKS, "milliseconds" },
       { CL_WUPS_SYNC_METHOD_VSYNC, "v-sync" },
     };
-    root.add(WUPSConfigItemMultipleValues::CreateFromValue(
+    WUPSConfigItemMultipleValues_AddToCategory(cat_settings,
       CL_WUPS_CONFIG_SYNC_METHOD,
       "Sync method",
       CL_WUPS_SYNC_METHOD_TICKS,
       wups_settings.sync_method,
       syncs,
-      &multiple_values_cb));
+      2,
+      &multiple_values_cb);
+
+    WUPSConfigAPI_Category_AddCategory(root, cat_settings);
+
+    /**
+     * ========================================================================
+     * Classics Live login information submenu -- Read-only information from the config
+     * ========================================================================
+     */
+    WUPSConfigCategoryHandle cat_login;
+    WUPSConfigAPICreateCategoryOptionsV1 cat_login_options = { .name = "Login information" };
+    WUPSConfigAPI_Category_Create(cat_login_options, &cat_login);
 
     /* Username */
-    WUPSConfigItemMultipleValues::ValuePair username[] =
+    ConfigItemMultipleValuesPair username[] =
     {
       { 0, wups_settings.user.username },
     };
-    root.add(WUPSConfigItemMultipleValues::CreateFromValue(
+    WUPSConfigItemMultipleValues_AddToCategory(cat_login,
       "username",
       "Username",
       0,
       0,
       username,
-      &multiple_values_cb));
+      1,
+      &multiple_values_cb);
 
     /* Password */
     char hidden_pw[sizeof(wups_settings.user.password)];
     for (unsigned i = 0; i < sizeof(hidden_pw); i++)
       hidden_pw[i] = wups_settings.user.password[i] ? '*' : '\0';
-    WUPSConfigItemMultipleValues::ValuePair password[] =
+    ConfigItemMultipleValuesPair password[] =
     {
       { 0, hidden_pw },
     };
-    root.add(WUPSConfigItemMultipleValues::CreateFromValue(
+    WUPSConfigItemMultipleValues_AddToCategory(cat_login,
       "password",
       "Password",
       0,
       0,
       password,
-      &multiple_values_cb));
+      1,
+      &multiple_values_cb);
 
     /* Language */
-    WUPSConfigItemMultipleValues::ValuePair language[] =
+    ConfigItemMultipleValuesPair language[] =
     {
       { 0, wups_settings.user.language },
     };
-    root.add(WUPSConfigItemMultipleValues::CreateFromValue(
+    WUPSConfigItemMultipleValues_AddToCategory(cat_login,
       "language",
       "Language",
       0,
       0,
       language,
-      &multiple_values_cb));
-  } catch (std::exception &e){
-      OSReport("Exception: %s\n", e.what());
-      return WUPSCONFIG_API_CALLBACK_RESULT_ERROR;
+      1,
+      &multiple_values_cb);
+
+    WUPSConfigAPI_Category_AddCategory(root, cat_login);
+  }
+  catch (std::exception &e)
+  {
+    OSReport("Exception: %s\n", e.what());
+    return WUPSCONFIG_API_CALLBACK_RESULT_ERROR;
   }
 
   return WUPSCONFIG_API_CALLBACK_RESULT_SUCCESS;
