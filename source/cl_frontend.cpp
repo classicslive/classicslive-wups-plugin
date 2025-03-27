@@ -189,13 +189,13 @@ void cl_fe_thread(cl_task_t *cl_task)
   thread->task = cl_task;
   OSMemoryBarrier();
   if (!OSCreateThread(&thread->os_thread,
-                 cl_wups_thread_handler,
-                 1,
-                 ((char*)thread),
-                 thread->stack + sizeof(thread->stack),
-                 sizeof(thread->stack),
-                 31,
-                 OS_THREAD_ATTRIB_AFFINITY_ANY))
+                      cl_wups_thread_handler,
+                      1,
+                      ((char*)thread),
+                      thread->stack + sizeof(thread->stack),
+                      sizeof(thread->stack),
+                      31,
+                      OS_THREAD_ATTRIB_AFFINITY_ANY))
     cl_fe_display_message(CL_MSG_ERROR, "Thread error");
   else
     OSResumeThread(&thread->os_thread);
@@ -206,6 +206,7 @@ bool cl_fe_user_data(cl_user_t *user, unsigned index)
 {
   CL_UNUSED(index);
 
+  /* Login should be retrieved from storage before this is called */
   memcpy(user, &wups_settings.user, sizeof(cl_user_t));
 
   return true;

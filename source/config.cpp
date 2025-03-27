@@ -4,12 +4,14 @@
 #include <wups/config/WUPSConfigItemBoolean.h>
 #include <wups/config/WUPSConfigItemIntegerRange.h>
 #include <wups/config/WUPSConfigItemMultipleValues.h>
+#include <wups/config/WUPSConfigItemStub.h>
 #include <wups/storage.h>
 
 extern "C"
 {
   #include <classicslive-integration/cl_common.h>
   #include <classicslive-integration/cl_frontend.h>
+  #include <classicslive-integration/cl_main.h>
 };
 
 #define DEBUG_FUNCTION_LINE_ERR(fmt, ...) OSReport("Error: %s:%d: " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
@@ -94,6 +96,21 @@ void InitConfig(void)
     DEBUG_FUNCTION_LINE_ERR("Failed to save storage %s (%d)", WUPSStorageAPI::GetStatusStr(storageRes).data(), storageRes);
 }
 
+/**
+ * Add to a config category a field meant for information only.
+ */
+static WUPSConfigAPIStatus cl_add_readonly(WUPSConfigCategoryHandle cat, const char *name, const char *value)
+{
+  static unsigned dummy_iter = 0;
+  char dummy_key[8];
+  ConfigItemMultipleValuesPair field[] = { { 0, value } };
+
+  dummy_iter++;
+  snprintf(dummy_key, sizeof(dummy_key), "dm%u", dummy_iter);
+
+  return WUPSConfigItemMultipleValues_AddToCategory(cat, dummy_key, name, 0, 0, field, 1, NULL);
+}
+
 WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle root)
 {
   try
@@ -149,52 +166,45 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     WUPSConfigAPICreateCategoryOptionsV1 cat_login_options = { .name = "Login information" };
     WUPSConfigAPI_Category_Create(cat_login_options, &cat_login);
 
+    WUPSConfigItemStub_AddToCategory(cat_login,
+      "The following fields are stored in the 'classicslive.json' file on your SD Card.\n"
+      "Please edit it in a text editor to change these values.\n"
+      "For more information, visit https://www.github.com/classicslive/classicslive-wups-plugin.");
+
     /* Username */
-    ConfigItemMultipleValuesPair username[] =
-    {
-      { 0, wups_settings.user.username },
-    };
-    WUPSConfigItemMultipleValues_AddToCategory(cat_login,
-      "username",
-      "Username",
-      0,
-      0,
-      username,
-      1,
-      &multiple_values_cb);
+    cl_add_readonly(cat_login, "Username", wups_settings.user.username);
 
     /* Password */
     char hidden_pw[sizeof(wups_settings.user.password)];
     for (unsigned i = 0; i < sizeof(hidden_pw); i++)
       hidden_pw[i] = wups_settings.user.password[i] ? '*' : '\0';
-    ConfigItemMultipleValuesPair password[] =
-    {
-      { 0, hidden_pw },
-    };
-    WUPSConfigItemMultipleValues_AddToCategory(cat_login,
-      "password",
-      "Password",
-      0,
-      0,
-      password,
-      1,
-      &multiple_values_cb);
+    cl_add_readonly(cat_login, "Password", hidden_pw);
 
     /* Language */
-    ConfigItemMultipleValuesPair language[] =
-    {
-      { 0, wups_settings.user.language },
-    };
-    WUPSConfigItemMultipleValues_AddToCategory(cat_login,
-      "language",
-      "Language",
-      0,
-      0,
-      language,
-      1,
-      &multiple_values_cb);
+    cl_add_readonly(cat_login, "Language", wups_settings.user.language);
 
     WUPSConfigAPI_Category_AddCategory(root, cat_login);
+
+    /**
+     * ========================================================================
+     * Classics Live session information submenu
+     * ========================================================================
+     */
+
+    WUPSConfigCategoryHandle cat_session;
+    WUPSConfigAPICreateCategoryOptionsV1 cat_session_options = { .name = "Session information" };
+    WUPSConfigAPI_Category_Create(cat_session_options, &cat_session);
+
+    /* Session information */
+    if (session.ready)
+    {
+      cl_add_readonly(cat_session, "Game name", session.game_name);
+      cl_add_readonly(cat_session, "Checksum", session.checksum);
+    }
+    else
+      WUPSConfigItemStub_AddToCategory(cat_session, "Please start a compatible game to create a Classics Live session.");
+      
+    WUPSConfigAPI_Category_AddCategory(root, cat_session);
   }
   catch (std::exception &e)
   {
