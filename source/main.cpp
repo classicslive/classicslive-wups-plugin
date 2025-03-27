@@ -107,6 +107,7 @@ static int cl_wups_main(int argc, const char **argv)
 
 INITIALIZE_PLUGIN()
 {
+  InitConfig();
   NotificationModule_InitLibrary();
   curl_global_init(CURL_GLOBAL_ALL);
 }

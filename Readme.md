@@ -21,4 +21,5 @@ Connect to Classics Live directly from the Wii U
   * ```pacman -S wiiu-dev wiiu-curl```
 * Install the following dependencies. Simply ```git clone``` then ```make install``` each one.
   * [wups](https://github.com/wiiu-env/WiiUPluginSystem)
+  * [libcurlwrapper](https://github.com/wiiu-env/libcurlwrapper)
   * [libnotifications](https://github.com/wiiu-env/libnotifications)

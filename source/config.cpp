@@ -12,6 +12,8 @@ extern "C"
   #include <classicslive-integration/cl_frontend.h>
 };
 
+#define DEBUG_FUNCTION_LINE_ERR(fmt, ...) OSReport("Error: %s:%d: " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+
 #include "config.h"
 
 cl_wups_settings_t wups_settings = { true, true, CL_WUPS_SYNC_METHOD_TICKS };
@@ -20,129 +22,155 @@ WUPS_USE_STORAGE("classicslive");
 
 void bool_cb(ConfigItemBoolean *item, bool value)
 {
-  if (item && item->configId)
+  if (item && item->identifier)
   {
-    if (std::string_view(item->configId) == CL_WUPS_CONFIG_ENABLED)
+    bool *target = nullptr;
+    WUPSStorageError res;
+
+    if (std::string_view(item->identifier) == CL_WUPS_CONFIG_ENABLED)
     {
-      wups_settings.enabled = value;
+      target = &wups_settings.enabled;
       cl_fe_display_message(CL_MSG_INFO, value ?
         "The plugin will be enabled next time you load a game." :
         "The plugin will be disabled next time you load a game. Exit the game to close this session.");
     }
-    else if (std::string_view(item->configId) == CL_WUPS_CONFIG_NETWORK_NOTIFICATIONS)
-      wups_settings.network_notifications = value;
-
-    WUPS_StoreBool(nullptr, item->configId, value);
+    else if (std::string_view(item->identifier) == CL_WUPS_CONFIG_NETWORK_NOTIFICATIONS)
+      target = &wups_settings.network_notifications;
+    else
+      return;
+    
+    *target = value;
+    if ((res = WUPSStorageAPI::Store(item->identifier, value)) != WUPS_STORAGE_ERROR_SUCCESS)
+      DEBUG_FUNCTION_LINE_ERR("Failed to save storage %s (%d)", WUPSStorageAPI::GetStatusStr(res).data(), res);
   }
 }
 
 void multiple_values_cb(ConfigItemMultipleValues *item, unsigned value)
 {
-  if (item && item->configId)
+  if (item && item->identifier)
   {
-    if (std::string_view(item->configId) == CL_WUPS_CONFIG_SYNC_METHOD)
-      wups_settings.sync_method = value;
+    int *target = nullptr;
+    WUPSStorageError res;
 
-    WUPS_StoreInt(nullptr, item->configId, value);
+    if (std::string_view(item->identifier) == CL_WUPS_CONFIG_SYNC_METHOD)
+      target = &wups_settings.sync_method;
+    else
+      return;
+
+    *target = value;
+    if ((res = WUPSStorageAPI::Store(item->identifier, value)) != WUPS_STORAGE_ERROR_SUCCESS)
+      DEBUG_FUNCTION_LINE_ERR("Failed to save storage %s (%d)", WUPSStorageAPI::GetStatusStr(res).data(), res);
   }
 }
 
-WUPS_GET_CONFIG()
+WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle rootHandle);
+
+void ConfigMenuClosedCallback(void)
 {
-  WUPS_OpenStorage();
+  WUPSStorageError storageRes;
 
-  WUPSConfigHandle config;
-  WUPSConfig_CreateHandled(&config, "Classics Live");
-
-  WUPSConfigCategoryHandle setting;
-  WUPSConfig_AddCategoryByNameHandled(config, "Settings", &setting);
-
-  WUPSConfigItemBoolean_AddToCategoryHandled(
-    config,
-    setting,
-    CL_WUPS_CONFIG_ENABLED,
-    "Enable Classics Live",
-    wups_settings.enabled,
-    bool_cb);
-
-  ConfigItemMultipleValuesPair sync_method[2];
-  sync_method[0].value = CL_WUPS_SYNC_METHOD_TICKS;
-  sync_method[0].valueName = (char*)"milliseconds";
-  sync_method[1].value = CL_WUPS_SYNC_METHOD_VSYNC;
-  sync_method[1].valueName = (char*)"v-sync";
-  WUPSConfigItemMultipleValues_AddToCategoryHandled(
-    config,
-    setting,
-    CL_WUPS_CONFIG_SYNC_METHOD,
-    "Sync method",
-    wups_settings.sync_method,
-    sync_method,
-    sizeof(sync_method) / sizeof(sync_method[0]),
-    multiple_values_cb);
-
-  WUPSConfigItemBoolean_AddToCategoryHandled(
-    config,
-    setting,
-    CL_WUPS_CONFIG_NETWORK_NOTIFICATIONS,
-    "Show network notifications",
-    wups_settings.network_notifications,
-    bool_cb);
-
-  /* Set up the login info category. For now, it is read-only. */
-  WUPSConfigCategoryHandle login;
-  WUPSConfig_AddCategoryByNameHandled(config, "Login info", &login);
-  cl_user_t user;
-  cl_fe_user_data(&user, 0);
-
-  /* Display the username */
-  ConfigItemMultipleValuesPair username[1];
-  username[0].value = 0;
-  username[0].valueName = user.username;
-  WUPSConfigItemMultipleValues_AddToCategoryHandled(
-    config,
-    login,
-    "username",
-    "Username",
-    0,
-    username,
-    sizeof(username) / sizeof(username[0]),
-    multiple_values_cb);
-
-  /* Display the password (masked with asterisks) */
-  ConfigItemMultipleValuesPair password[1];
-  char hidden_pw[sizeof(user.password)];
-  for (unsigned i = 0; i < sizeof(hidden_pw); i++)
-    hidden_pw[i] = user.password[i] ? '*' : '\0';
-  password[0].value = 0;
-  password[0].valueName = hidden_pw;
-  WUPSConfigItemMultipleValues_AddToCategoryHandled(
-    config,
-    login,
-    "password",
-    "Password",
-    0,
-    password,
-    sizeof(password) / sizeof(password[0]),
-    multiple_values_cb);
-
-  /* Display the language */
-  ConfigItemMultipleValuesPair language[1];
-  language[0].value = 0;
-  language[0].valueName = user.language;
-  WUPSConfigItemMultipleValues_AddToCategoryHandled(
-    config,
-    login,
-    "language",
-    "Language",
-    0,
-    language,
-    sizeof(language) / sizeof(language[0]),
-    multiple_values_cb);
-
-  return config;
+  if ((storageRes = WUPSStorageAPI::SaveStorage()) != WUPS_STORAGE_ERROR_SUCCESS)
+    DEBUG_FUNCTION_LINE_ERR("Failed to close storage %s (%d)", WUPSStorageAPI::GetStatusStr(storageRes).data(), storageRes);
 }
 
-WUPS_CONFIG_CLOSED()
+void InitConfig(void)
 {
-  WUPS_CloseStorage();
+  WUPSConfigAPIOptionsV1 configOptions = { .name = "Classics Live" };
+  WUPSStorageError storageRes;
+
+  if (WUPSConfigAPI_Init(configOptions, ConfigMenuOpenedCallback, ConfigMenuClosedCallback) != WUPSCONFIG_API_RESULT_SUCCESS)
+    DEBUG_FUNCTION_LINE_ERR("Failed to init config api");
+
+  if (((storageRes = WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_ENABLED, wups_settings.enabled, true)) != WUPS_STORAGE_ERROR_SUCCESS) ||
+      ((storageRes = WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_SYNC_METHOD, wups_settings.sync_method, CL_WUPS_SYNC_METHOD_TICKS)) != WUPS_STORAGE_ERROR_SUCCESS) ||
+      ((storageRes = WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_NETWORK_NOTIFICATIONS, wups_settings.network_notifications, true)) != WUPS_STORAGE_ERROR_SUCCESS))
+    DEBUG_FUNCTION_LINE_ERR("Failed to get or store defaults");
+
+  if ((storageRes = WUPSStorageAPI::SaveStorage()) != WUPS_STORAGE_ERROR_SUCCESS)
+    DEBUG_FUNCTION_LINE_ERR("Failed to save storage %s (%d)", WUPSStorageAPI::GetStatusStr(storageRes).data(), storageRes);
+}
+
+WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle rootHandle)
+{
+  try
+  {
+    WUPSConfigCategory root = WUPSConfigCategory(rootHandle);
+
+    /* Enable Classics Live */
+    root.add(WUPSConfigItemBoolean::Create(
+      CL_WUPS_CONFIG_ENABLED,
+      "Enable Classics Live",
+      true,
+      wups_settings.enabled,
+      &bool_cb));
+
+    /* Show network notifications */
+    root.add(WUPSConfigItemBoolean::Create(
+      CL_WUPS_CONFIG_NETWORK_NOTIFICATIONS,
+      "Show network notifications",
+      true,
+      wups_settings.network_notifications,
+      &bool_cb));
+
+    /* Sync method */
+    constexpr WUPSConfigItemMultipleValues::ValuePair syncs[] =
+    {
+      { CL_WUPS_SYNC_METHOD_TICKS, "milliseconds" },
+      { CL_WUPS_SYNC_METHOD_VSYNC, "v-sync" },
+    };
+    root.add(WUPSConfigItemMultipleValues::CreateFromValue(
+      CL_WUPS_CONFIG_SYNC_METHOD,
+      "Sync method",
+      CL_WUPS_SYNC_METHOD_TICKS,
+      wups_settings.sync_method,
+      syncs,
+      &multiple_values_cb));
+
+    /* Username */
+    WUPSConfigItemMultipleValues::ValuePair username[] =
+    {
+      { 0, wups_settings.user.username },
+    };
+    root.add(WUPSConfigItemMultipleValues::CreateFromValue(
+      "username",
+      "Username",
+      0,
+      0,
+      username,
+      &multiple_values_cb));
+
+    /* Password */
+    char hidden_pw[sizeof(wups_settings.user.password)];
+    for (unsigned i = 0; i < sizeof(hidden_pw); i++)
+      hidden_pw[i] = wups_settings.user.password[i] ? '*' : '\0';
+    WUPSConfigItemMultipleValues::ValuePair password[] =
+    {
+      { 0, hidden_pw },
+    };
+    root.add(WUPSConfigItemMultipleValues::CreateFromValue(
+      "password",
+      "Password",
+      0,
+      0,
+      password,
+      &multiple_values_cb));
+
+    /* Language */
+    WUPSConfigItemMultipleValues::ValuePair language[] =
+    {
+      { 0, wups_settings.user.language },
+    };
+    root.add(WUPSConfigItemMultipleValues::CreateFromValue(
+      "language",
+      "Language",
+      0,
+      0,
+      language,
+      &multiple_values_cb));
+  } catch (std::exception &e){
+      OSReport("Exception: %s\n", e.what());
+      return WUPSCONFIG_API_CALLBACK_RESULT_ERROR;
+  }
+
+  return WUPSCONFIG_API_CALLBACK_RESULT_SUCCESS;
 }

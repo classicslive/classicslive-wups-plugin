@@ -206,22 +206,7 @@ bool cl_fe_user_data(cl_user_t *user, unsigned index)
 {
   CL_UNUSED(index);
 
-  WUPS_OpenStorage();
-
-  if (WUPS_GetString(nullptr, "language", user->language, sizeof(user->language)))
-  {
-    WUPS_StoreString(nullptr, "language", "en_US");
-    snprintf(user->language, sizeof(user->language), "%s", "en_US");
-  }
-  if (WUPS_GetString(nullptr, "username", user->username, sizeof(user->username)) ||
-      WUPS_GetString(nullptr, "password", user->password, sizeof(user->password)))
-  {
-    cl_message(CL_MSG_ERROR, "Please provide your Classics Live account credentials in "
-                             "plugins/config/classicslive.json");
-    return false;
-  }
-
-  WUPS_CloseStorage();
+  memcpy(user, &wups_settings.user, sizeof(cl_user_t));
 
   return true;
 }
