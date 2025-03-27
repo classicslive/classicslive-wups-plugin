@@ -12,6 +12,7 @@ extern "C"
 #define CL_WUPS_CONFIG_USERNAME "username"
 #define CL_WUPS_CONFIG_PASSWORD "password"
 #define CL_WUPS_CONFIG_TOKEN "token"
+#define CL_WUPS_CONFIG_LANGUAGE "language"
 
 #define CL_WUPS_SYNC_METHOD_TICKS 0
 #define CL_WUPS_SYNC_METHOD_VSYNC 1

@@ -83,7 +83,11 @@ void InitConfig(void)
 
   if (((storageRes = WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_ENABLED, wups_settings.enabled, true)) != WUPS_STORAGE_ERROR_SUCCESS) ||
       ((storageRes = WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_SYNC_METHOD, wups_settings.sync_method, CL_WUPS_SYNC_METHOD_TICKS)) != WUPS_STORAGE_ERROR_SUCCESS) ||
-      ((storageRes = WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_NETWORK_NOTIFICATIONS, wups_settings.network_notifications, true)) != WUPS_STORAGE_ERROR_SUCCESS))
+      ((storageRes = WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_NETWORK_NOTIFICATIONS, wups_settings.network_notifications, true)) != WUPS_STORAGE_ERROR_SUCCESS) ||
+      ((storageRes = WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_USERNAME, wups_settings.user.username, sizeof(wups_settings.user.username), nullptr)) != WUPS_STORAGE_ERROR_SUCCESS) ||
+      ((storageRes = WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_PASSWORD, wups_settings.user.password, sizeof(wups_settings.user.password), nullptr)) != WUPS_STORAGE_ERROR_SUCCESS) ||
+      ((storageRes = WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_TOKEN, wups_settings.user.token, sizeof(wups_settings.user.token), nullptr)) != WUPS_STORAGE_ERROR_SUCCESS) ||
+      ((storageRes = WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_LANGUAGE, wups_settings.user.language, sizeof(wups_settings.user.language), nullptr)) != WUPS_STORAGE_ERROR_SUCCESS))
     DEBUG_FUNCTION_LINE_ERR("Failed to get or store defaults");
 
   if ((storageRes = WUPSStorageAPI::SaveStorage()) != WUPS_STORAGE_ERROR_SUCCESS)
