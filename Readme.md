@@ -17,8 +17,8 @@ Connect to Classics Live directly from the Wii U
 * Configure a [DevkitPRO environment](https://devkitpro.org/wiki/Getting_Started).
 * Clone the project and its submodules:
   * ```git clone --recurse-submodules https://github.com/classicslive/classicslive-wups-plugin```
-* Install the following dependencies with pacman:
-  * ```pacman -S wiiu-dev wiiu-curl```
+* Install the following dependencies:
+  * ```pacman -S wiiu-dev wiiu-curl``` or ```dkp-pacman -S wiiu-dev wiiu-curl```, depending on your environment.
 * Install the following dependencies. Simply ```git clone``` then ```make install``` each one.
   * [wups](https://github.com/wiiu-env/WiiUPluginSystem)
   * [libcurlwrapper](https://github.com/wiiu-env/libcurlwrapper)
