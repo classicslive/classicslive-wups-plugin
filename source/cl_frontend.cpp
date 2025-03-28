@@ -45,21 +45,21 @@ bool cl_fe_install_membanks(void)
 {
   unsigned int data, size;
 
-  if (memory.bank_count)
+  if (memory.region_count)
     return true;
 
   if (title_is_n64())
   {
-    cl_membank_t* bank;
+    cl_memory_region_t* region;
 
-    memory.banks = (cl_membank_t*)malloc(sizeof(cl_membank_t));
-    bank = &memory.banks[0];
-    bank->data = (uint8_t*)CL_WUPS_N64_RAMPTR;
-    bank->start = 0x80000000;
-    bank->size = 8 * 1024 * 1024;
-    snprintf(bank->title, sizeof(bank->title), "%s",
+    memory.regions = (cl_memory_region_t*)malloc(sizeof(cl_memory_region_t));
+    region = &memory.regions[0];
+    region->base_host = (uint8_t*)CL_WUPS_N64_RAMPTR;
+    region->base_guest = 0x80000000;
+    region->size = 8 * 1024 * 1024;
+    snprintf(region->title, sizeof(region->title), "%s",
              "CafeOS Vessel RDRAM");
-    memory.bank_count = 1;
+    memory.region_count = 1;
 
 #if CL_WUPS_DEBUG
     cl_message(CL_MSG_INFO, "%s %04X %04X", bank->title, bank->start, bank->size);
@@ -69,17 +69,18 @@ bool cl_fe_install_membanks(void)
   }
   else if (OSGetForegroundBucketFreeArea(&data, &size) && data && size)
   {
-    cl_membank_t* bank;
+    cl_memory_region_t* region;
 
     data = OSEffectiveToPhysical(data);
-    memory.banks = (cl_membank_t*)malloc(sizeof(cl_membank_t));
-    bank = &memory.banks[0];
-    memcpy(&bank->data, &data, sizeof(data));
-    bank->start = data;
-    bank->size = size;
-    snprintf(bank->title, sizeof(bank->title), "%s",
-             "CafeOS Foreground Bucket");
-    memory.bank_count = 1;
+    memory.regions = (cl_memory_region_t*)malloc(sizeof(cl_memory_region_t));
+    region = &memory.regions[0];
+    memcpy(&region->base_host, &data, sizeof(data));
+    region->base_guest = data;
+    region->base_host = (void*)data;
+    region->size = size;
+    snprintf(region->title, sizeof(region->title), "%s",
+         "CafeOS Foreground Bucket");
+    memory.region_count = 1;
 
 #if CL_WUPS_DEBUG
     cl_message(CL_MSG_INFO, "%s %04X %04X", bank->title, bank->start, bank->size);

@@ -77,7 +77,7 @@ static int cl_wups_main(int argc, const char **argv)
 
     /** @todo HACK! Implement new endianness type for the N64 situation */
     if (title_system == CL_WUPS_TITLE_N64)
-      memory.endianness = CL_ENDIAN_BIG;
+      memory.regions[0].endianness = CL_ENDIAN_BIG;
 
     cl_run();
 
