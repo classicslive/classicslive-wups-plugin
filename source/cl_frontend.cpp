@@ -43,53 +43,47 @@ void cl_fe_display_message(unsigned level, const char *msg)
  */
 bool cl_fe_install_membanks(void)
 {
+  cl_memory_region_t *region = nullptr;
   unsigned int data, size;
 
   if (memory.region_count)
     return true;
-
-  if (title_is_n64())
+  else if (title_is_n64())
   {
-    cl_memory_region_t* region;
-
+    data = CL_WUPS_N64_RAMPTR;
     memory.regions = (cl_memory_region_t*)malloc(sizeof(cl_memory_region_t));
     region = &memory.regions[0];
-    region->base_host = (uint8_t*)CL_WUPS_N64_RAMPTR;
+    region->base_host = (void*)data;
     region->base_guest = 0x80000000;
     region->size = 8 * 1024 * 1024;
     snprintf(region->title, sizeof(region->title), "%s",
-             "CafeOS Vessel RDRAM");
+      "CafeOS Vessel RDRAM");
     memory.region_count = 1;
-
-#if CL_WUPS_DEBUG
-    cl_message(CL_MSG_INFO, "%s %04X %04X", bank->title, bank->start, bank->size);
-#endif
-
-    return true;
   }
   else if (OSGetForegroundBucketFreeArea(&data, &size) && data && size)
   {
-    cl_memory_region_t* region;
-
     data = OSEffectiveToPhysical(data);
     memory.regions = (cl_memory_region_t*)malloc(sizeof(cl_memory_region_t));
     region = &memory.regions[0];
-    memcpy(&region->base_host, &data, sizeof(data));
-    region->base_guest = data;
     region->base_host = (void*)data;
+    region->base_guest = data;
     region->size = size;
     snprintf(region->title, sizeof(region->title), "%s",
-         "CafeOS Foreground Bucket");
+      "CafeOS Foreground Bucket");
     memory.region_count = 1;
-
-#if CL_WUPS_DEBUG
-    cl_message(CL_MSG_INFO, "%s %04X %04X", bank->title, bank->start, bank->size);
-#endif
-
-    return true;
   }
   else
     return false;
+
+#if CL_WUPS_DEBUG
+  cl_message(CL_MSG_INFO, "%s : %04X at %p is %u MB",
+    region->title,
+    region->base_guest,
+    region->base_host,
+    region->size / (1024 * 1024));
+#endif
+
+  return true;
 }
 
 const char* cl_fe_library_name(void)

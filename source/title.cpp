@@ -2906,10 +2906,10 @@ unsigned title_get_system(uint64_t title_id)
 
   while (title->type)
   {
-  if (title->id == title_id)
-    return title->type;
-  else
-    title++;
+    if (title->id == title_id)
+      return title->type;
+    else
+      title++;
   }
 
   return 0;

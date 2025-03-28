@@ -1,5 +1,6 @@
 #include <string_view>
 
+#include <coreinit/title.h>
 #include <wups.h>
 #include <wups/config/WUPSConfigItemBoolean.h>
 #include <wups/config/WUPSConfigItemIntegerRange.h>
@@ -200,10 +201,15 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     {
       char message[256];
 
-      snprintf(message, sizeof(message), "%u", session.game_id);
       cl_add_readonly(cat_session, "Game name", session.game_name);
+      
+      snprintf(message, sizeof(message), "%u", session.game_id);
       cl_add_readonly(cat_session, "Game ID", message);
+
       cl_add_readonly(cat_session, "Checksum", session.checksum);
+      
+      snprintf(message, sizeof(message), "%08llX", OSGetTitleID());
+      cl_add_readonly(cat_session, "Title ID", message);
     }
     else if (wups_settings.enabled)
       WUPSConfigItemStub_AddToCategory(cat_session, "Please start a compatible game to create a Classics Live session.");
