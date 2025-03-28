@@ -166,10 +166,10 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     WUPSConfigAPICreateCategoryOptionsV1 cat_login_options = { .name = "Login information" };
     WUPSConfigAPI_Category_Create(cat_login_options, &cat_login);
 
-    WUPSConfigItemStub_AddToCategory(cat_login,
-      "The following fields are stored in the 'classicslive.json' file on your SD Card.\n"
-      "Please edit it in a text editor to change these values.\n"
-      "For more information, visit https://www.github.com/classicslive/classicslive-wups-plugin.");
+    WUPSConfigItemStub_AddToCategory(cat_login, "Login info is stored in the 'classicslive.json' file on your SD Card.");
+    WUPSConfigItemStub_AddToCategory(cat_login, "Please edit it in a text editor to change these values.");
+    WUPSConfigItemStub_AddToCategory(cat_login, "For more information, visit:");
+    WUPSConfigItemStub_AddToCategory(cat_login, "https://www.github.com/classicslive/classicslive-wups-plugin");
 
     /* Username */
     cl_add_readonly(cat_login, "Username", wups_settings.user.username);
@@ -198,11 +198,17 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     /* Session information */
     if (session.ready)
     {
+      char message[256];
+
+      snprintf(message, sizeof(message), "%u", session.game_id);
       cl_add_readonly(cat_session, "Game name", session.game_name);
+      cl_add_readonly(cat_session, "Game ID", message);
       cl_add_readonly(cat_session, "Checksum", session.checksum);
     }
-    else
+    else if (wups_settings.enabled)
       WUPSConfigItemStub_AddToCategory(cat_session, "Please start a compatible game to create a Classics Live session.");
+    else
+      WUPSConfigItemStub_AddToCategory(cat_session, "Please enable Classics Live and start a compatible game.");
       
     WUPSConfigAPI_Category_AddCategory(root, cat_session);
   }
