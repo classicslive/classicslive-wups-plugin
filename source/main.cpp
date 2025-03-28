@@ -2,7 +2,8 @@
 #include <coreinit/thread.h>
 #include <coreinit/time.h>
 #include <coreinit/title.h>
-#include <gx2/event.h>
+#include <gx2/event.h> // for v-sync
+#include <proc_ui/procui.h> // for detecting home menu
 
 #include <curl/curl.h>
 #include <notifications/notifications.h>
@@ -111,7 +112,7 @@ static int cl_wups_main(int argc, const char **argv)
 }
 
 /**
- * Pause processing when the HOME Menu is opened.
+ * Resume processing when the HOME Menu is closed.
  */
 ON_ACQUIRED_FOREGROUND()
 {
@@ -119,11 +120,12 @@ ON_ACQUIRED_FOREGROUND()
 }
 
 /**
- * Resume processing when the HOME Menu is closed.
+ * Pause processing when the HOME Menu is opened.
  */
 ON_RELEASE_FOREGROUND()
 {
-  paused = true;
+  if (session.ready)
+    paused = true;
 }
 
 INITIALIZE_PLUGIN()

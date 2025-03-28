@@ -80,7 +80,7 @@ bool cl_fe_install_membanks(void)
     region->title,
     region->base_guest,
     region->base_host,
-    region->size / (1024 * 1024));
+    region->size >> 20);
 #endif
 
   return true;
