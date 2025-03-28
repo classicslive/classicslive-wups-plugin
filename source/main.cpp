@@ -153,6 +153,7 @@ ON_APPLICATION_START()
 
   memset(&memory, 0, sizeof(memory));
   memset(&session, 0, sizeof(session));
+  paused = false;
 
   title_id = OSGetTitleID();
   title_type = title_id & 0xFFFFFFFF00000000;
