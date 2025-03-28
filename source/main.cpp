@@ -28,6 +28,7 @@ WUPS_PLUGIN_AUTHOR("Keith Bourdon");
 WUPS_PLUGIN_LICENSE("MIT");
 
 static OSThread thread;
+static bool paused = false;
 static uint8_t stack[0x30000];
 static uint64_t title_id = 0;
 static uint64_t title_type = 0;
@@ -75,8 +76,11 @@ static int cl_wups_main(int argc, const char **argv)
     // else
     //   GX2WaitForVsync();
 
+    if (paused || error)
+      continue;
+
     /** @todo HACK! Implement new endianness type for the N64 situation */
-    if (title_system == CL_WUPS_TITLE_N64)
+    if (title_system == CL_WUPS_TITLE_N64 && memory.region_count)
       memory.regions[0].endianness = CL_ENDIAN_BIG;
 
     cl_run();
@@ -106,13 +110,29 @@ static int cl_wups_main(int argc, const char **argv)
   return 0;
 }
 
+/**
+ * Pause processing when the HOME Menu is opened.
+ */
+ON_ACQUIRED_FOREGROUND()
+{
+  paused = false;
+}
+
+/**
+ * Resume processing when the HOME Menu is closed.
+ */
+ON_RELEASE_FOREGROUND()
+{
+  paused = true;
+}
+
 INITIALIZE_PLUGIN()
 {
   NotificationModule_InitLibrary();
   if (curl_global_init(CURL_GLOBAL_ALL))
   {
     cl_fe_display_message(CL_MSG_ERROR, "Could not initialize network. "
-                                        "Did you install CURLWrapperModule?");
+                                        "Is CURLWrapperModule installed?");
     error = 1;
   }
   InitConfig();
@@ -128,6 +148,9 @@ ON_APPLICATION_START()
 {
   if (!wups_settings.enabled || error)
     return;
+
+  memset(&memory, 0, sizeof(memory));
+  memset(&session, 0, sizeof(session));
 
   title_id = OSGetTitleID();
   title_type = title_id & 0xFFFFFFFF00000000;
