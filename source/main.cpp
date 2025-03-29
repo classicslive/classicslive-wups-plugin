@@ -30,6 +30,7 @@ WUPS_PLUGIN_LICENSE("MIT");
 
 static OSThread thread;
 static bool paused = false;
+static unsigned pause_frames = 0;
 static uint8_t stack[0x30000];
 static uint64_t title_id = 0;
 static uint64_t title_type = 0;
@@ -84,6 +85,13 @@ static int cl_wups_main(int argc, const char **argv)
     if (title_system == CL_WUPS_TITLE_N64 && memory.region_count)
       memory.regions[0].endianness = CL_ENDIAN_BIG;
 
+    if (pause_frames)
+    {
+      cl_update_memory();
+      pause_frames--;
+      continue;
+    }
+    
     cl_run();
 
 #if CL_WUPS_DEBUG
@@ -127,6 +135,37 @@ ON_RELEASE_FOREGROUND()
   if (session.ready)
     paused = true;
 }
+
+DECL_FUNCTION(void, OSReport, const char *fmt, ...)
+{
+  /**
+   * The following strings are printed to console when the Nintendo 64
+   * emulator toggles the Virtual Console Menu:
+   * Opened: "VCMenus Startup"
+   * Closed: "Quit VCM"
+   */
+  va_list args;
+  va_start(args, fmt);
+  char buffer[512];
+  vsnprintf(buffer, sizeof(buffer), fmt, args);
+  va_end(args);
+
+  if (strstr(buffer, "VCMenus Startup"))
+  {
+    cl_message(CL_MSG_DEBUG, "VC Menu opened. Pausing.");
+    paused = true;
+  }
+  else if (strstr(buffer, "Quit "))
+  {
+    cl_message(CL_MSG_DEBUG, "VC Menu closed. Unpausing.");
+    paused = false;
+    pause_frames = 15;
+  }
+
+  real_OSReport(buffer);
+}
+
+WUPS_MUST_REPLACE(OSReport, WUPS_LOADER_LIBRARY_COREINIT, OSReport);
 
 INITIALIZE_PLUGIN()
 {
