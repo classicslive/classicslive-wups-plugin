@@ -64,6 +64,18 @@ static int cl_wups_main(int argc, const char **argv)
       }
     }
   }
+#if 0
+  /**
+   * Hashing can be easily done for NES here by checking for this header
+   */
+  else if (title_system == CL_WUPS_TITLE_NES)
+  {
+    if (*((uint32_t*)0x10000050) != 0x4e455300)
+    {
+      // figure total rom size from iNES header
+    }
+  }
+#endif
   else if (title_system == CL_WUPS_TITLE_WII_U)
   {
     if (!cl_init(&title_id, sizeof(title_id), "Wii U"))
@@ -149,14 +161,30 @@ DECL_FUNCTION(void, OSReport, const char *fmt, ...)
   vsnprintf(buffer, sizeof(buffer), fmt, args);
   va_end(args);
 
-  if (session.ready && title_system == CL_WUPS_TITLE_N64)
+  if (session.ready)
   {
-    if (strstr(buffer, "trlEmuShellMenuOpen"))
+    const char *vcm_open_string;
+    const char *vcm_close_string;
+    
+    switch (title_system)
+    {
+    case CL_WUPS_TITLE_N64:
+      vcm_open_string = "trlEmuShellMenuOpen";
+      vcm_close_string = "trlEmuShellMenuClose";
+      break;
+    case CL_WUPS_TITLE_NES:
+      vcm_open_string = "change 3 <--- 2";
+      vcm_close_string = "change 2 <--- 3";
+      break;
+    default:
+      goto finish;
+    }
+    if (strstr(buffer, vcm_open_string))
     {
       cl_message(CL_MSG_DEBUG, "VC Menu opened. Pausing.");
       paused = true;
     }
-    else if (strstr(buffer, "trlEmuShellMenuClose"))
+    else if (strstr(buffer, vcm_close_string))
     {
       cl_message(CL_MSG_DEBUG, "VC Menu closed. Unpausing.");
       paused = false;
@@ -164,6 +192,7 @@ DECL_FUNCTION(void, OSReport, const char *fmt, ...)
     }
   }
 
+  finish:
   real_OSReport(buffer);
 }
 
