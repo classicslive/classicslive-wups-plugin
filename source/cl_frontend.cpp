@@ -60,9 +60,23 @@ bool cl_fe_install_membanks(void)
     region->base_guest = 0x80000000;
     region->size = 8 * 1024 * 1024;
     snprintf(region->title, sizeof(region->title), "%s",
-      "CafeOS Vessel RDRAM");
+      "Vessel RDRAM");
     memory.region_count = 1;
   }
+#if 0
+  else if (title_is_nds())
+  {
+    data = *((uint32_t*)(0xf56139d8)) + 0x02000000; // values at beginning of addrspace should be filled with 0xdeadbeef
+    memory.regions = (cl_memory_region_t*)malloc(sizeof(cl_memory_region_t));
+    region = &memory.regions[0];
+    region->base_host = (void*)data;
+    region->base_guest = 0x02000000;
+    region->size = 4 * 1024 * 1024;
+    snprintf(region->title, sizeof(region->title), "%s",
+      "Hachihachi Main RAM");
+    memory.region_count = 1;
+  }
+#endif
   else if (OSGetForegroundBucketFreeArea(&data, &size) && data && size)
   {
     data = OSEffectiveToPhysical(data);
