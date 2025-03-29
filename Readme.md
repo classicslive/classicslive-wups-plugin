@@ -7,7 +7,7 @@ Connect to Classics Live directly from the Wii U
 - Supports native Wii U titles and Nintendo 64 Virtual Console games
 
 ## Installation
-* Download and unzip the contents of the [latest release](https://github.com/classicslive/classicslive-wups-plugin/releases).
+* Download the contents of the [latest release](https://github.com/classicslive/classicslive-wups-plugin/releases).
 * Move **classicslive.wps** to **SD:/wiiu/environments/aroma/plugins**.
 * Move **classicslive.json** to **SD:/wiiu/environments/aroma/plugins/config**.
 * Edit **classicslive.json** in a text editor to include your Classics Live username and password.
