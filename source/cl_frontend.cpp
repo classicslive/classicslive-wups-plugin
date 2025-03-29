@@ -24,6 +24,9 @@ void cl_fe_display_message(unsigned level, const char *msg)
 {
   switch (level)
   {
+#if CL_WUPS_DEBUG
+  case CL_MSG_DEBUG:
+#endif
   case CL_MSG_INFO:
     //snprintf(new_msg, sizeof(new_msg), "\u2282\u221f %s", msg); //\ue02b
     NotificationModule_AddInfoNotification(msg);
@@ -75,13 +78,11 @@ bool cl_fe_install_membanks(void)
   else
     return false;
 
-#if CL_WUPS_DEBUG
-  cl_message(CL_MSG_INFO, "%s : %04X at %p is %u MB",
+  cl_message(CL_MSG_DEBUG, "%s : %04X at %p is %u MB",
     region->title,
     region->base_guest,
     region->base_host,
     region->size >> 20);
-#endif
 
   return true;
 }

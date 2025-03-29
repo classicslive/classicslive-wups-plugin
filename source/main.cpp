@@ -149,7 +149,7 @@ DECL_FUNCTION(void, OSReport, const char *fmt, ...)
   vsnprintf(buffer, sizeof(buffer), fmt, args);
   va_end(args);
 
-  if (session.ready && title_type == CL_WUPS_TITLE_N64)
+  if (session.ready && title_system == CL_WUPS_TITLE_N64)
   {
     if (strstr(buffer, "trlEmuShellMenuOpen"))
     {
@@ -204,7 +204,12 @@ ON_APPLICATION_START()
    * If we want to support demos at some point, we can enable them here.
    */
   if (!(title_type == 0x0005000000000000)) /* || title_type == 0x0005000200000000)) */
+  {
+#if CL_WUPS_DEBUG
+    cl_fe_display_message(CL_MSG_ERROR, "Only disc or eShop games are supported.");
+#endif
     return;
+  }
 
   title_system = title_get_system(title_id);
   
@@ -229,8 +234,7 @@ ON_APPLICATION_START()
   }
 #if CL_WUPS_DEBUG
   else
-    cl_fe_display_message(CL_MSG_ERROR, "Only Wii U or Nintendo 64 titles "
-                                        "are supported.");
+    cl_fe_display_message(CL_MSG_ERROR, "Only Wii U or Nintendo 64 titles are supported.");
 #endif
 }
 
