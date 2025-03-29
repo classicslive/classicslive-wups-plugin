@@ -136,30 +136,32 @@ ON_RELEASE_FOREGROUND()
     paused = true;
 }
 
+/**
+ * The following strings are printed to console when the Nintendo 64
+ * emulator toggles the Virtual Console Menu, which we can monitor to pause
+ * CL processing when needed.
+ */
 DECL_FUNCTION(void, OSReport, const char *fmt, ...)
 {
-  /**
-   * The following strings are printed to console when the Nintendo 64
-   * emulator toggles the Virtual Console Menu:
-   * Opened: "VCMenus Startup"
-   * Closed: "Quit VCM"
-   */
   va_list args;
   va_start(args, fmt);
   char buffer[512];
   vsnprintf(buffer, sizeof(buffer), fmt, args);
   va_end(args);
 
-  if (strstr(buffer, "VCMenus Startup"))
+  if (session.ready && title_type == CL_WUPS_TITLE_N64)
   {
-    cl_message(CL_MSG_DEBUG, "VC Menu opened. Pausing.");
-    paused = true;
-  }
-  else if (strstr(buffer, "Quit "))
-  {
-    cl_message(CL_MSG_DEBUG, "VC Menu closed. Unpausing.");
-    paused = false;
-    pause_frames = 15;
+    if (strstr(buffer, "trlEmuShellMenuOpen"))
+    {
+      cl_message(CL_MSG_DEBUG, "VC Menu opened. Pausing.");
+      paused = true;
+    }
+    else if (strstr(buffer, "trlEmuShellMenuClose"))
+    {
+      cl_message(CL_MSG_DEBUG, "VC Menu closed. Unpausing.");
+      paused = false;
+      pause_frames = 15;
+    }
   }
 
   real_OSReport(buffer);
