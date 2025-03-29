@@ -198,11 +198,17 @@ ON_APPLICATION_START()
 
   title_id = OSGetTitleID();
   title_type = title_id & 0xFFFFFFFF00000000;
-  title_system = title_get_system(title_id);
 
-  /* Ignore everything that's not a disc, eShop title, or demo */
-  if ((title_type == 0x0005000000000000 || title_type == 0x0005000200000000) &&
-      (title_system == CL_WUPS_TITLE_WII_U || title_system == CL_WUPS_TITLE_N64))
+  /**
+   * Ignore everything that's not a disc or eShop title.
+   * If we want to support demos at some point, we can enable them here.
+   */
+  if (!(title_type == 0x0005000000000000)) /* || title_type == 0x0005000200000000)) */
+    return;
+
+  title_system = title_get_system(title_id);
+  
+  if (title_system == CL_WUPS_TITLE_WII_U || title_system == CL_WUPS_TITLE_N64)
   {
     OSMemoryBarrier();
     if (!OSCreateThread(&thread,
