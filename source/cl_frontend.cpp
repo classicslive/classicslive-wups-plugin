@@ -10,6 +10,7 @@
 #include <wups.h>
 
 #include "config.h"
+#include "main.h"
 #include "title.h"
 
 extern "C"
@@ -63,8 +64,7 @@ bool cl_fe_install_membanks(void)
       "Vessel RDRAM");
     memory.region_count = 1;
   }
-#if 0
-  else if (title_is_nds())
+  else if (wups_state.title_system == CL_WUPS_TITLE_NDS)
   {
     data = *((uint32_t*)(0xf56139d8)) + 0x02000000; // values at beginning of addrspace should be filled with 0xdeadbeef
     memory.regions = (cl_memory_region_t*)malloc(sizeof(cl_memory_region_t));
@@ -73,10 +73,9 @@ bool cl_fe_install_membanks(void)
     region->base_guest = 0x02000000;
     region->size = 4 * 1024 * 1024;
     snprintf(region->title, sizeof(region->title), "%s",
-      "Hachihachi Main RAM");
+      "Hachihachi PSRAM");
     memory.region_count = 1;
   }
-#endif
   else if (OSGetForegroundBucketFreeArea(&data, &size) && data && size)
   {
     data = OSEffectiveToPhysical(data);
@@ -164,7 +163,7 @@ void cl_fe_network_post(const char *url, char *data,
   {
     char msg[16];
 
-    snprintf(msg, 16, "Error %03u", response_code);
+    snprintf(msg, 16, "Error: %s", curl_easy_strerror(response_code));
     cl_fe_display_message(CL_MSG_ERROR, msg);
 
     response.data = NULL;

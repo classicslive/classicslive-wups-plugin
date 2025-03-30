@@ -20,6 +20,7 @@ extern "C"
 };
 
 #include "config.h"
+#include "main.h"
 #include "title.h"
 
 WUPS_PLUGIN_NAME("Classics Live");
@@ -32,20 +33,21 @@ static OSThread thread;
 static bool paused = false;
 static unsigned pause_frames = 0;
 static uint8_t stack[0x30000];
-static uint64_t title_id = 0;
-static uint64_t title_type = 0;
-static uint64_t title_system = 0;
 static int error = 0;
+
+cl_wups_state_t wups_state;
 
 static int cl_wups_main(int argc, const char **argv)
 {
+  bool found = false;
+
   /**
    * Wait for an arbitrary amount for the game to fully start.
    * This amount of time was tested for Nintendo 64 games to begin emulation.
    */
   OSSleepTicks(OSSecondsToTicks(10));
 
-  if (title_system == CL_WUPS_TITLE_N64)
+  if (wups_state.title_system == CL_WUPS_TITLE_N64)
   {
     for (auto i = (uint32_t*)0x14000000; i < (uint32_t*)0x20000000; i++)
     {
@@ -60,15 +62,19 @@ static int cl_wups_main(int argc, const char **argv)
         else if (!cl_init(i, size, "Wii U"))
           cl_message(CL_MSG_ERROR, "cl_init error");
 
+        found = true;
+
         break;
       }
     }
+    if (!found)
+      cl_message(CL_MSG_ERROR, "Could not initialize N64 game.");
   }
 #if 0
   /**
    * Hashing can be easily done for NES here by checking for this header
    */
-  else if (title_system == CL_WUPS_TITLE_NES)
+  else if (wups_state.title_system == CL_WUPS_TITLE_NES)
   {
     if (*((uint32_t*)0x10000050) != 0x4e455300)
     {
@@ -76,56 +82,87 @@ static int cl_wups_main(int argc, const char **argv)
     }
   }
 #endif
-  else if (title_system == CL_WUPS_TITLE_WII_U)
+  else if (wups_state.title_system == CL_WUPS_TITLE_NDS)
   {
-    if (!cl_init(&title_id, sizeof(title_id), "Wii U"))
+    for (auto i = (uint32_t*)0x2a800000; i < (uint32_t*)0x2b400000; i++)
+    {
+      /**
+       * Find the first 4 bytes of encoded Nintendo logo, then confirm by
+       * checking the 2-byte logo checksum.
+       */
+      if (*i == 0x24FFAE51) // && (*(i + 0x9c) & 0xFFFF0000) == 0xCF560000)
+      {
+        /* The ROM size is in memory 0x10 bytes behind the ROM */
+        void *data = i - 0x30;
+        uint32_t size = *(i - 0x34);
+
+        if (!data || !size || size > 0x20000000)
+          continue;
+        else if (!cl_init(data, size, "Wii U"))
+          cl_message(CL_MSG_ERROR, "cl_init error");
+
+        found = true;
+
+        break;
+      }
+    }
+    if (!found)
+      cl_message(CL_MSG_ERROR, "Could not initialize NDS game.");
+  }
+  else if (wups_state.title_system == CL_WUPS_TITLE_WII_U)
+  {
+    found = true;
+    if (!cl_init(&wups_state.title_id, sizeof(wups_state.title_id), "Wii U"))
       cl_message(CL_MSG_ERROR, "cl_init error");
   }
 
-  while (true)
+  if (found)
   {
-    /** @todo V-sync mode temporarily disabled */
-    // if (wups_settings.sync_method == CL_WUPS_SYNC_METHOD_TICKS)
-      OSSleepTicks(OSNanosecondsToTicks(16666667));
-    // else
-    //   GX2WaitForVsync();
-
-    if (paused || error)
-      continue;
-
-    /** @todo HACK! Implement new endianness type for the N64 situation */
-    if (title_system == CL_WUPS_TITLE_N64 && memory.region_count)
-      memory.regions[0].endianness = CL_ENDIAN_BIG;
-
-    if (pause_frames)
+    while (true)
     {
-      cl_update_memory();
-      pause_frames--;
-      continue;
-    }
-    
-    cl_run();
+      
+      if (wups_settings.sync_method == CL_WUPS_SYNC_METHOD_TICKS)
+        OSSleepTicks(OSNanosecondsToTicks(16666667));
+      else
+        GX2WaitForVsync();
 
-#if CL_WUPS_DEBUG
-    /* Display a notification whenever a rich value changes */
-    for (unsigned int i = 0; i < memory.note_count; i++)
-    {
-      cl_memnote_t *note = &memory.notes[i];
-
-      if (!note->flags)
+      if (paused || error)
         continue;
 
-      if (note->current.intval.i64 != note->previous.intval.i64)
+      /** @todo HACK! Implement new endianness type for the N64 situation */
+      if (wups_state.title_system == CL_WUPS_TITLE_N64 && memory.region_count)
+        memory.regions[0].endianness = CL_ENDIAN_BIG;
+
+      if (pause_frames)
       {
-        cl_message(CL_MSG_INFO, "Note %04X {%u} %u %u: %llu",
-          note->address,
-          note->key,
-          note->type,
-          note->pointer_passes,
-          note->current.intval.i64);
+        cl_update_memory();
+        pause_frames--;
+        continue;
       }
-    }
+      
+      cl_run();
+
+#if CL_WUPS_DEBUG
+      /* Display a notification whenever a rich value changes */
+      for (unsigned int i = 0; i < memory.note_count; i++)
+      {
+        cl_memnote_t *note = &memory.notes[i];
+
+        if (!note->flags)
+          continue;
+
+        if (note->current.intval.i64 != note->previous.intval.i64)
+        {
+          cl_message(CL_MSG_INFO, "Note %04X {%u} %u %u: %llu",
+            note->address,
+            note->key,
+            note->type,
+            note->pointer_passes,
+            note->current.intval.i64);
+        }
+      }
 #endif
+    }
   }
 
   return 0;
@@ -166,7 +203,7 @@ DECL_FUNCTION(void, OSReport, const char *fmt, ...)
     const char *vcm_open_string;
     const char *vcm_close_string;
     
-    switch (title_system)
+    switch (wups_state.title_system)
     {
     case CL_WUPS_TITLE_N64:
       vcm_open_string = "trlEmuShellMenuOpen";
@@ -225,14 +262,14 @@ ON_APPLICATION_START()
   memset(&session, 0, sizeof(session));
   paused = false;
 
-  title_id = OSGetTitleID();
-  title_type = title_id & 0xFFFFFFFF00000000;
+  wups_state.title_id = OSGetTitleID();
+  wups_state.title_type = wups_state.title_id & 0xFFFFFFFF00000000;
 
   /**
    * Ignore everything that's not a disc or eShop title.
    * If we want to support demos at some point, we can enable them here.
    */
-  if (!(title_type == 0x0005000000000000)) /* || title_type == 0x0005000200000000)) */
+  if (!(wups_state.title_type == 0x0005000000000000)) /* || wups_state.title_type == 0x0005000200000000)) */
   {
 #if CL_WUPS_DEBUG
     cl_fe_display_message(CL_MSG_ERROR, "Only disc or eShop games are supported.");
@@ -240,9 +277,11 @@ ON_APPLICATION_START()
     return;
   }
 
-  title_system = title_get_system(title_id);
+  wups_state.title_system = title_get_system(wups_state.title_id);
   
-  if (title_system == CL_WUPS_TITLE_WII_U || title_system == CL_WUPS_TITLE_N64)
+  if (wups_state.title_system == CL_WUPS_TITLE_WII_U || 
+      wups_state.title_system == CL_WUPS_TITLE_N64 ||
+      wups_state.title_system == CL_WUPS_TITLE_NDS)
   {
     OSMemoryBarrier();
     if (!OSCreateThread(&thread,
