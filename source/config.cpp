@@ -259,7 +259,14 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     WUPSConfigCategoryHandle cat_debug;
     WUPSConfigAPICreateCategoryOptionsV1 cat_debug_options = { .name = "Debug information" };
     WUPSConfigAPI_Category_Create(cat_debug_options, &cat_debug);
+    
+    cl_add_readonly(cat_session, "Title ID", "%08llX", OSGetTitleID());
 
+    if (wups_state.rom_data && wups_state.rom_size)
+    {
+      cl_add_readonly(cat_debug, "Guest ROM data", "0x%08X", wups_state.rom_data);
+      cl_add_readonly(cat_debug, "Guest ROM size", "0x%08X (%u MB)", wups_state.rom_size, wups_state.rom_size >> 20);
+    }
     if (memory.region_count && memory.regions)
     {
       cl_add_readonly(cat_debug, "Memory host base", "0x%08X", memory.regions[0].base_host);

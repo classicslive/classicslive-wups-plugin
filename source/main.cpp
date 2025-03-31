@@ -62,6 +62,8 @@ static int cl_wups_main(int argc, const char **argv)
         else if (!cl_init(i, size, "Wii U"))
           cl_message(CL_MSG_ERROR, "cl_init error");
 
+        wups_state.rom_data = i;
+        wups_state.rom_size = size;
         found = true;
 
         break;
@@ -76,9 +78,10 @@ static int cl_wups_main(int argc, const char **argv)
    */
   else if (wups_state.title_system == CL_WUPS_TITLE_NES)
   {
-    if (*((uint32_t*)0x10000050) != 0x4e455300)
+    if (*((uint32_t*)0x10000050) == 0x4e455300)
     {
       // figure total rom size from iNES header
+      wups_state.rom = (uint32_t*)0x10000050;
     }
   }
 #endif
@@ -101,6 +104,8 @@ static int cl_wups_main(int argc, const char **argv)
         else if (!cl_init(data, size, "Wii U"))
           cl_message(CL_MSG_ERROR, "cl_init error");
 
+        wups_state.rom_data = data;
+        wups_state.rom_size = size;
         found = true;
 
         break;
@@ -200,8 +205,8 @@ DECL_FUNCTION(void, OSReport, const char *fmt, ...)
 
   if (session.ready)
   {
-    const char *vcm_open_string;
-    const char *vcm_close_string;
+    const char *vcm_open_string = nullptr;
+    const char *vcm_close_string = nullptr;
     
     switch (wups_state.title_system)
     {
@@ -302,7 +307,7 @@ ON_APPLICATION_START()
   }
 #if CL_WUPS_DEBUG
   else
-    cl_fe_display_message(CL_MSG_ERROR, "Only Wii U or Nintendo 64 titles are supported.");
+    cl_fe_display_message(CL_MSG_ERROR, "Unsupported title system.");
 #endif
 }
 
