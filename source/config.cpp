@@ -238,9 +238,12 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     WUPSConfigAPICreateCategoryOptionsV1 cat_debug_options = { .name = "Debug information" };
     WUPSConfigAPI_Category_Create(cat_debug_options, &cat_debug);
 
-    cl_add_readonly(cat_debug, "Memory host base", "0x%08X", memory.regions[0].base_host);
-    cl_add_readonly(cat_debug, "Memory guest base", "0x%08X", memory.regions[0].base_guest);
-    cl_add_readonly(cat_debug, "Memory size", "0x%08X (%u MB)", memory.regions[0].size, memory.regions[0].size >> 20);
+    if (memory.region_count && memory.regions)
+    {
+      cl_add_readonly(cat_debug, "Memory host base", "0x%08X", memory.regions[0].base_host);
+      cl_add_readonly(cat_debug, "Memory guest base", "0x%08X", memory.regions[0].base_guest);
+      cl_add_readonly(cat_debug, "Memory size", "0x%08X (%u MB)", memory.regions[0].size, memory.regions[0].size >> 20);
+    }
 
     WUPSConfigAPI_Category_AddCategory(root, cat_debug);
 #endif
