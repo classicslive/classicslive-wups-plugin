@@ -39,16 +39,10 @@ void cl_fe_display_message(unsigned level, const char *msg)
   }
 }
 
-/**
- * @todo This will need to be more involved for proper Wii U Virtual Console
- * support. N64 and NDS are easy as long as there are no pointers, other
- * consoles will be more complicated. The simple implementation is perfect for
- * native Wii U games, though.
- */
 bool cl_fe_install_membanks(void)
 {
   cl_memory_region_t *region = nullptr;
-  unsigned int data, size;
+  unsigned int data;
 
   if (memory.region_count)
     return true;
@@ -60,8 +54,7 @@ bool cl_fe_install_membanks(void)
     region->base_host = (void*)data;
     region->base_guest = 0x80000000;
     region->size = 8 * 1024 * 1024;
-    snprintf(region->title, sizeof(region->title), "%s",
-      "Vessel RDRAM");
+    snprintf(region->title, sizeof(region->title), "%s", "Vessel RDRAM");
     memory.region_count = 1;
   }
   else if (wups_state.title_system == CL_WUPS_TITLE_NDS)
@@ -72,24 +65,20 @@ bool cl_fe_install_membanks(void)
     region->base_host = (void*)data;
     region->base_guest = 0x02000000;
     region->size = 4 * 1024 * 1024;
-    snprintf(region->title, sizeof(region->title), "%s",
-      "Hachihachi PSRAM");
+    snprintf(region->title, sizeof(region->title), "%s", "Hachihachi PSRAM");
     memory.region_count = 1;
   }
-  else if (OSGetForegroundBucketFreeArea(&data, &size) && data && size)
+  else
   {
-    data = OSEffectiveToPhysical(data);
+    data = 0x10000000;
     memory.regions = (cl_memory_region_t*)malloc(sizeof(cl_memory_region_t));
     region = &memory.regions[0];
     region->base_host = (void*)data;
     region->base_guest = data;
-    region->size = size;
-    snprintf(region->title, sizeof(region->title), "%s",
-      "CafeOS Foreground Bucket");
+    region->size = 1 * 1024 * 1024 * 1024;
+    snprintf(region->title, sizeof(region->title), "%s", "CafeOS Foreground Process");
     memory.region_count = 1;
   }
-  else
-    return false;
 
   cl_message(CL_MSG_DEBUG, "%s : %04X at %p is %u MB",
     region->title,
