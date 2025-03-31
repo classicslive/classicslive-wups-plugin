@@ -1,14 +1,16 @@
+#include <stdarg.h>
 #include <string_view>
 
 #include <coreinit/title.h>
+#include <sysapp/switch.h>
+
 #include <wups.h>
+#include <wups/config_api.h>
 #include <wups/config/WUPSConfigItemBoolean.h>
 #include <wups/config/WUPSConfigItemIntegerRange.h>
 #include <wups/config/WUPSConfigItemMultipleValues.h>
 #include <wups/config/WUPSConfigItemStub.h>
 #include <wups/storage.h>
-
-#include <stdarg.h>
 
 extern "C"
 {
@@ -16,11 +18,13 @@ extern "C"
   #include <classicslive-integration/cl_frontend.h>
   #include <classicslive-integration/cl_main.h>
   #include <classicslive-integration/cl_memory.h>
+  #include <classicslive-integration/cl_network.h>
 };
 
 #define DEBUG_FUNCTION_LINE_ERR(fmt, ...) OSReport("Error: %s:%d: " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 #include "config.h"
+#include "main.h"
 
 cl_wups_settings_t wups_settings = { true, true, CL_WUPS_SYNC_METHOD_TICKS };
 
@@ -48,6 +52,22 @@ void bool_cb(ConfigItemBoolean *item, bool value)
     *target = value;
     if ((res = WUPSStorageAPI::Store(item->identifier, value)) != WUPS_STORAGE_ERROR_SUCCESS)
       DEBUG_FUNCTION_LINE_ERR("Failed to save storage %s (%d)", WUPSStorageAPI::GetStatusStr(res).data(), res);
+  }
+}
+
+void game_page_cb(void *context, WUPSConfigSimplePadData input)
+{
+  if (input.buttons_d & WUPS_CONFIG_BUTTON_A)
+  {
+    SysAppBrowserArgs args;
+    char url[256];
+
+    snprintf(url, sizeof(url), CL_URL_SITE "/game/%u", session.game_id);
+    args.stdArgs = { 0, 0 };
+    args.url = url;
+    args.urlSize = sizeof(url);
+
+    SYSSwitchToBrowser(&args);
   }
 }
 
@@ -209,17 +229,19 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     /* Session information */
     if (session.ready)
     {
-      char message[256];
-
       cl_add_readonly(cat_session, "Game name", session.game_name);
-      
-      snprintf(message, sizeof(message), "%u", session.game_id);
-      cl_add_readonly(cat_session, "Game ID", message);
-
+      cl_add_readonly(cat_session, "Game ID", "%u", session.game_id);
       cl_add_readonly(cat_session, "Checksum", session.checksum);
-      
-      snprintf(message, sizeof(message), "%08llX", OSGetTitleID());
-      cl_add_readonly(cat_session, "Title ID", message);
+
+      WUPSConfigAPIItemCallbacksV2 game_page_cbs = { .onInput=&game_page_cb };
+      WUPSConfigAPIItemOptionsV2 game_page_ops = {
+        .displayName="Visit game page",
+        .context=nullptr,
+        .callbacks=game_page_cbs
+      };
+      WUPSConfigItemHandle game_page_item;
+      WUPSConfigAPI_Item_Create(game_page_ops, &game_page_item);
+      WUPSConfigAPI_Category_AddItem(cat_session, game_page_item);
     }
     else if (wups_settings.enabled)
       WUPSConfigItemStub_AddToCategory(cat_session, "Please start a compatible game to create a Classics Live session.");
