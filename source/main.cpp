@@ -315,4 +315,5 @@ ON_APPLICATION_ENDS()
 {
   if (session.ready)
     cl_network_post("close", NULL, NULL);
+  wups_state = { 0 };
 }

@@ -71,6 +71,18 @@ void game_page_cb(void *context, WUPSConfigSimplePadData input)
   }
 }
 
+static int32_t game_page_display(void *context, char *out_buf, int32_t out_size)
+{
+  snprintf(out_buf, out_size, " ");
+  return 0;
+}
+
+static int32_t game_page_selected(void *context, char *out_buf, int32_t out_size)
+{
+  snprintf(out_buf, out_size, "Press \ue000 to open the game page.");
+  return 0;
+}
+
 void multiple_values_cb(ConfigItemMultipleValues *item, unsigned value)
 {
   if (item && item->identifier)
@@ -229,11 +241,11 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     /* Session information */
     if (session.ready)
     {
-      cl_add_readonly(cat_session, "Game name", session.game_name);
-      cl_add_readonly(cat_session, "Game ID", "%u", session.game_id);
-      cl_add_readonly(cat_session, "Checksum", session.checksum);
-
-      WUPSConfigAPIItemCallbacksV2 game_page_cbs = { .onInput=&game_page_cb };
+      WUPSConfigAPIItemCallbacksV2 game_page_cbs = {
+        .getCurrentValueDisplay=&game_page_display,
+        .getCurrentValueSelectedDisplay=&game_page_selected,
+        .onInput=&game_page_cb
+      };
       WUPSConfigAPIItemOptionsV2 game_page_ops = {
         .displayName="Visit game page",
         .context=nullptr,
@@ -241,7 +253,10 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
       };
       WUPSConfigItemHandle game_page_item;
       WUPSConfigAPI_Item_Create(game_page_ops, &game_page_item);
+
+      cl_add_readonly(cat_session, "Game name", session.game_name);
       WUPSConfigAPI_Category_AddItem(cat_session, game_page_item);
+      cl_add_readonly(cat_session, "Checksum", session.checksum);
     }
     else if (wups_settings.enabled)
       WUPSConfigItemStub_AddToCategory(cat_session, "Please start a compatible game to create a Classics Live session.");
@@ -259,19 +274,24 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     WUPSConfigCategoryHandle cat_debug;
     WUPSConfigAPICreateCategoryOptionsV1 cat_debug_options = { .name = "Debug information" };
     WUPSConfigAPI_Category_Create(cat_debug_options, &cat_debug);
+    char msg[256];
     
-    cl_add_readonly(cat_session, "Title ID", "%08llX", OSGetTitleID());
+    cl_add_readonly(cat_debug, "Title ID", "%08llX", OSGetTitleID());
 
     if (wups_state.rom_data && wups_state.rom_size)
     {
       cl_add_readonly(cat_debug, "Guest ROM data", "0x%08X", wups_state.rom_data);
       cl_add_readonly(cat_debug, "Guest ROM size", "0x%08X (%u MB)", wups_state.rom_size, wups_state.rom_size >> 20);
+      snprintf(msg, sizeof(msg), "%08X %08X", ((uint32_t*)wups_state.rom_data)[0], ((uint32_t*)wups_state.rom_data)[1]);
+      WUPSConfigItemStub_AddToCategory(cat_debug, msg);
     }
     if (memory.region_count && memory.regions)
     {
       cl_add_readonly(cat_debug, "Memory host base", "0x%08X", memory.regions[0].base_host);
       cl_add_readonly(cat_debug, "Memory guest base", "0x%08X", memory.regions[0].base_guest);
       cl_add_readonly(cat_debug, "Memory size", "0x%08X (%u MB)", memory.regions[0].size, memory.regions[0].size >> 20);
+      snprintf(msg, sizeof(msg), "%08X %08X", ((uint32_t*)memory.regions[0].base_host)[0], ((uint32_t*)memory.regions[0].base_host)[1]);
+      WUPSConfigItemStub_AddToCategory(cat_debug, msg);
     }
 
     WUPSConfigAPI_Category_AddCategory(root, cat_debug);
