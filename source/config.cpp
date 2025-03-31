@@ -8,11 +8,14 @@
 #include <wups/config/WUPSConfigItemStub.h>
 #include <wups/storage.h>
 
+#include <stdarg.h>
+
 extern "C"
 {
   #include <classicslive-integration/cl_common.h>
   #include <classicslive-integration/cl_frontend.h>
   #include <classicslive-integration/cl_main.h>
+  #include <classicslive-integration/cl_memory.h>
 };
 
 #define DEBUG_FUNCTION_LINE_ERR(fmt, ...) OSReport("Error: %s:%d: " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
@@ -100,16 +103,23 @@ void InitConfig(void)
 /**
  * Add to a config category a field meant for information only.
  */
-static WUPSConfigAPIStatus cl_add_readonly(WUPSConfigCategoryHandle cat, const char *name, const char *value)
+static WUPSConfigAPIStatus cl_add_readonly(WUPSConfigCategoryHandle cat, const char *name, const char *value, ...)
 {
   static unsigned dummy_iter = 0;
   char dummy_key[8];
-  ConfigItemMultipleValuesPair field[] = { { 0, value } };
+  va_list args;
+  char message[256];
 
   dummy_iter++;
   snprintf(dummy_key, sizeof(dummy_key), "dm%u", dummy_iter);
 
-  return WUPSConfigItemMultipleValues_AddToCategory(cat, dummy_key, name, 0, 0, field, 1, NULL);
+  va_start(args, value);
+  vsnprintf(message, sizeof(message), value, args);
+  va_end(args);
+
+  ConfigItemMultipleValuesPair message_values[] = { { 0, message } };
+
+  return WUPSConfigItemMultipleValues_AddToCategory(cat, dummy_key, name, 0, 0, message_values, 1, NULL);
 }
 
 WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle root)
@@ -217,6 +227,23 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
       WUPSConfigItemStub_AddToCategory(cat_session, "Please enable Classics Live and start a compatible game.");
       
     WUPSConfigAPI_Category_AddCategory(root, cat_session);
+
+    /**
+     * ========================================================================
+     * Classics Live debug information submenu
+     * ========================================================================
+     */
+#if CL_WUPS_DEBUG
+    WUPSConfigCategoryHandle cat_debug;
+    WUPSConfigAPICreateCategoryOptionsV1 cat_debug_options = { .name = "Debug information" };
+    WUPSConfigAPI_Category_Create(cat_debug_options, &cat_debug);
+
+    cl_add_readonly(cat_debug, "Memory host base", "0x%08X", memory.regions[0].base_host);
+    cl_add_readonly(cat_debug, "Memory guest base", "0x%08X", memory.regions[0].base_guest);
+    cl_add_readonly(cat_debug, "Memory size", "0x%08X (%u MB)", memory.regions[0].size, memory.regions[0].size >> 20);
+
+    WUPSConfigAPI_Category_AddCategory(root, cat_debug);
+#endif
   }
   catch (std::exception &e)
   {
