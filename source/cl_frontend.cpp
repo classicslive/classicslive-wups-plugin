@@ -137,6 +137,11 @@ void cl_fe_network_post(const char *url, char *data,
   snprintf(user_agent, sizeof(user_agent), "cl_wups " GIT_VERSION " using curl/%s", curl_version->version);
   chunk.size = 0;
 
+#if CL_WUPS_DEBUG
+  cl_fe_display_message(CL_MSG_DEBUG, url);
+  cl_fe_display_message(CL_MSG_DEBUG, data);
+#endif
+
   curl_handle = curl_easy_init();
   curl_easy_setopt(curl_handle, CURLOPT_URL, CL_REQUEST_URL);
   curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, data);
@@ -161,9 +166,9 @@ void cl_fe_network_post(const char *url, char *data,
   }
   else
   {
-    char msg[16];
+    char msg[256];
 
-    snprintf(msg, 16, "Error: %s", curl_easy_strerror(response_code));
+    snprintf(msg, sizeof(msg), "Error %u: %s", response_code, curl_easy_strerror(response_code));
     cl_fe_display_message(CL_MSG_ERROR, msg);
 
     response.data = NULL;
@@ -203,7 +208,7 @@ void cl_fe_thread(cl_task_t *cl_task)
                       ((char*)thread),
                       thread->stack + sizeof(thread->stack),
                       sizeof(thread->stack),
-                      31,
+                      0,
                       OS_THREAD_ATTRIB_AFFINITY_ANY))
     cl_fe_display_message(CL_MSG_ERROR, "Thread error");
   else
