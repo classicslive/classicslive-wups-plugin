@@ -2,9 +2,9 @@
 Connect to Classics Live directly from the Wii U
 
 ## Features
-- Connect to the website and earn achievements, submit scores to leaderboards, and everything else covered by classicslive-integration
+- Connect to the website and earn achievements, submit scores to leaderboards, and everything else covered by [classicslive-integration](https://github.com/classicslive/classicslive-integration)
 - Runs passively in the background with little input or configuration
-- Supports native Wii U titles and Nintendo 64 Virtual Console games
+- Supports native Wii U titles, Nintendo 64 Virtual Console games, and Nintendo DS Virtual Console games
 
 ## Installation
 * Download the contents of the [latest release](https://github.com/classicslive/classicslive-wups-plugin/releases).
