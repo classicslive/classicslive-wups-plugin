@@ -222,7 +222,13 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     char hidden_pw[sizeof(wups_settings.user.password)];
     for (unsigned i = 0; i < sizeof(hidden_pw); i++)
       hidden_pw[i] = wups_settings.user.password[i] ? '*' : '\0';
-    cl_add_readonly(cat_login, "Password", hidden_pw);
+    cl_add_readonly(cat_login, "Password", hidden_pw[0] ? hidden_pw : "(empty)");
+
+    /* Token */
+    char hidden_token[sizeof(wups_settings.user.token)];
+    for (unsigned i = 0; i < sizeof(hidden_token); i++)
+      hidden_token[i] = wups_settings.user.token[i] ? '*' : '\0';
+    cl_add_readonly(cat_login, "Token", hidden_token[0] ? hidden_token : "(empty)");
 
     /* Language */
     cl_add_readonly(cat_login, "Language", wups_settings.user.language);
