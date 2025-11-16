@@ -1,7 +1,7 @@
 #include "title.h"
 
 /* http://wiiubrew.org/wiki/Title_database#00050000:_eShop_and_disc_titles */
-static cl_wups_title_t cl_wups_titles[] =
+static const cl_wups_title_t cl_wups_titles[] =
 {
   { 0x0005000010013000, CL_WUPS_TITLE_WII_U, /* Nintendo TVii (JPN) */ },
   { 0x0005000010100600, CL_WUPS_TITLE_WII_U, /* 鉄拳タッグトーナメント2 Wii U EDITION (TEKKEN TAG TOURNAMENT 2 Wii U EDITION) (JPN) */ },
@@ -2914,3 +2914,4 @@ unsigned title_get_system(uint64_t title_id)
 
   return 0;
 }
+

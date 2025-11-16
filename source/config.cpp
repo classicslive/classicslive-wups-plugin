@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <string_view>
 
+#include <coreinit/debug.h>
 #include <coreinit/title.h>
 #include <sysapp/switch.h>
 
@@ -239,7 +240,7 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     WUPSConfigAPI_Category_Create(cat_session_options, &cat_session);
 
     /* Session information */
-    if (session.ready)
+    if (session.state == CL_SESSION_STARTED)
     {
       WUPSConfigAPIItemCallbacksV2 game_page_cbs = {
         .getCurrentValueDisplay=&game_page_display,
@@ -254,7 +255,7 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
       WUPSConfigItemHandle game_page_item;
       WUPSConfigAPI_Item_Create(game_page_ops, &game_page_item);
 
-      cl_add_readonly(cat_session, "Game name", session.game_name);
+      cl_add_readonly(cat_session, "Game name", session.game_title);
       WUPSConfigAPI_Category_AddItem(cat_session, game_page_item);
       cl_add_readonly(cat_session, "Checksum", session.checksum);
     }
@@ -276,7 +277,11 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     WUPSConfigAPI_Category_Create(cat_debug_options, &cat_debug);
     char msg[256];
     
-    cl_add_readonly(cat_debug, "Title ID", "%08llX", OSGetTitleID());
+    cl_add_readonly(cat_debug, "Title ID", "%016llX", wups_state.title_id);
+    cl_add_readonly(cat_debug, "Title type", "%016llX", wups_state.title_type);
+    cl_add_readonly(cat_debug, "Title system", "%016llX", wups_state.title_system);
+    cl_add_readonly(cat_debug, "Title version", "%u", wups_state.title_version);
+    cl_add_readonly(cat_debug, "Title name", "%s", wups_state.title_name);
 
     if (wups_state.rom_data && wups_state.rom_size)
     {

@@ -1,8 +1,12 @@
 #include <coreinit/cache.h>
+#include <coreinit/memorymap.h>
 #include <coreinit/thread.h>
 #include <coreinit/time.h>
 #include <coreinit/title.h>
 #include <gx2/event.h> // for v-sync
+#include <malloc.h>
+#include <nn/acp/client.h>
+#include <nn/acp/title.h>
 #include <proc_ui/procui.h> // for detecting home menu
 
 #include <curl/curl.h>
@@ -59,14 +63,28 @@ static int cl_wups_main(int argc, const char **argv)
 
         if (!size)
           continue;
-        else if (!cl_init(i, size, "Wii U"))
-          cl_message(CL_MSG_ERROR, "cl_init error");
+        else 
+        {
+          cl_game_identifier_t ident;
 
-        wups_state.rom_data = i;
-        wups_state.rom_size = size;
-        found = true;
+          memset(&ident, 0, sizeof(ident));
+          ident.type = CL_GAMEIDENTIFIER_FILE_HASH;
+          ident.library = "Wii U Virtual Console";
+          ident.filename[0] = '\0';
+          ident.data = i;
+          ident.size = size;
 
-        break;
+          if (cl_login_and_start(ident) != CL_OK)
+            cl_message(CL_MSG_ERROR, "cl_login_and_start error");
+          else
+          {
+            wups_state.rom_data = i;
+            wups_state.rom_size = size;
+            found = true;
+
+            break;
+          }
+        }
       }
     }
     if (!found)
@@ -101,14 +119,28 @@ static int cl_wups_main(int argc, const char **argv)
 
         if (!data || !size || size > 0x20000000)
           continue;
-        else if (!cl_init(data, size, "Wii U"))
-          cl_message(CL_MSG_ERROR, "cl_init error");
+        else
+        {
+          cl_game_identifier_t ident;
 
-        wups_state.rom_data = data;
-        wups_state.rom_size = size;
-        found = true;
+          memset(&ident, 0, sizeof(ident));
+          ident.type = CL_GAMEIDENTIFIER_FILE_HASH;
+          ident.library = "Wii U Virtual Console";
+          ident.filename[0] = '\0';
+          ident.data = data;
+          ident.size = size;
 
-        break;
+          if (cl_login_and_start(ident) != CL_OK)
+            cl_message(CL_MSG_ERROR, "cl_login_and_start error");
+          else
+          {
+            wups_state.rom_data = data;
+            wups_state.rom_size = size;
+            found = true;
+
+            break;
+          }
+        }
       }
     }
     if (!found)
@@ -116,9 +148,19 @@ static int cl_wups_main(int argc, const char **argv)
   }
   else if (wups_state.title_system == CL_WUPS_TITLE_WII_U)
   {
-    found = true;
-    if (!cl_init(&wups_state.title_id, sizeof(wups_state.title_id), "Wii U"))
-      cl_message(CL_MSG_ERROR, "cl_init error");
+    cl_game_identifier_t ident;
+
+    memset(&ident, 0, sizeof(ident));
+    ident.type = CL_GAMEIDENTIFIER_PRODUCT_CODE;
+    ident.library = "Wii U Virtual Console";
+    ident.filename[0] = '\0';
+    snprintf(ident.product, sizeof(ident.product), "%016llX", wups_state.title_id);
+    snprintf(ident.version, sizeof(ident.version), "%u", wups_state.title_version);
+
+    if (cl_login_and_start(ident) != CL_OK)
+      cl_message(CL_MSG_ERROR, "cl_login_and_start error");
+    else
+      found = true;
   }
 
   if (found)
@@ -186,7 +228,7 @@ ON_ACQUIRED_FOREGROUND()
  */
 ON_RELEASE_FOREGROUND()
 {
-  if (session.ready)
+  if (session.state == CL_SESSION_STARTED)
     paused = true;
 }
 
@@ -203,7 +245,7 @@ DECL_FUNCTION(void, OSReport, const char *fmt, ...)
   vsnprintf(buffer, sizeof(buffer), fmt, args);
   va_end(args);
 
-  if (session.ready)
+  if (session.state == CL_SESSION_STARTED)
   {
     const char *vcm_open_string = nullptr;
     const char *vcm_close_string = nullptr;
@@ -258,6 +300,46 @@ DEINITIALIZE_PLUGIN()
   curl_global_cleanup();
 }
 
+/* Stolen from https://github.com/wiiu-env/ScreenshotWUPS/ */
+static void get_title_info(void) {
+    std::string result;
+    ACPInitialize();
+    auto *metaXml = (ACPMetaXml *) memalign(0x40, sizeof(ACPMetaXml));
+    if (ACPGetTitleMetaXml(OSGetTitleID(), metaXml) == ACP_RESULT_SUCCESS) {
+        wups_state.title_version = metaXml->title_version;
+        result                   = metaXml->shortname_en;
+        std::string illegalChars = "\\/:?\"<>|@=;`_^][";
+        for (auto it = result.begin(); it < result.end(); ++it) {
+            if (*it < '0' || *it > 'z') {
+                *it = ' ';
+            }
+        }
+        for (auto it = result.begin(); it < result.end(); ++it) {
+            bool found = illegalChars.find(*it) != std::string::npos;
+            if (found) {
+                *it = ' ';
+            }
+        }
+        uint32_t length = result.length();
+        for (uint32_t i = 1; i < length; ++i) {
+            if (result[i - 1] == ' ' && result[i] == ' ') {
+                result.erase(i, 1);
+                i--;
+                length--;
+            }
+        }
+        if (result.size() == 1 && result[0] == ' ') {
+            result.clear();
+        } else {
+        }
+    } else {
+        result.clear();
+    }
+    ACPFinalize();
+    snprintf(wups_state.title_name, sizeof(wups_state.title_name), "%s", result.c_str());
+    free(metaXml);
+}
+
 ON_APPLICATION_START()
 {
   if (!wups_settings.enabled || error)
@@ -269,6 +351,7 @@ ON_APPLICATION_START()
 
   wups_state.title_id = OSGetTitleID();
   wups_state.title_type = wups_state.title_id & 0xFFFFFFFF00000000;
+  get_title_info();
 
   /**
    * Ignore everything that's not a disc or eShop title.
@@ -313,7 +396,6 @@ ON_APPLICATION_START()
 
 ON_APPLICATION_ENDS()
 {
-  if (session.ready)
-    cl_network_post("close", NULL, NULL);
+  cl_free();
   wups_state = { 0 };
 }

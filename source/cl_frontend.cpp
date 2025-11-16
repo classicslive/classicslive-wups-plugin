@@ -113,8 +113,8 @@ static size_t cl_wups_network_cb(void *contents, size_t size, size_t nmemb, void
   return realsize;
 }
 
-void cl_fe_network_post(const char *url, char *data,
-  void(*callback)(cl_network_response_t))
+void cl_fe_network_post(const char *url, char *data, cl_network_cb_t callback,
+                        void *userdata)
 {
   CURL *curl_handle;
   CURLcode response_code;
@@ -132,7 +132,7 @@ void cl_fe_network_post(const char *url, char *data,
 #endif
 
   curl_handle = curl_easy_init();
-  curl_easy_setopt(curl_handle, CURLOPT_URL, CL_REQUEST_URL);
+  curl_easy_setopt(curl_handle, CURLOPT_URL, url);
   curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, data);
   curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, cl_wups_network_cb); 
   curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&chunk);
@@ -165,7 +165,7 @@ void cl_fe_network_post(const char *url, char *data,
     response.error_msg = "Network error";
   }
   if (callback)
-    callback(response);
+    callback(response, userdata);
 }
 
 typedef struct

@@ -4,3 +4,4 @@
 # Ignore final binary
 *.elf
 *.wps
+/.vscode
