@@ -70,7 +70,7 @@ static int cl_wups_main(int argc, const char **argv)
           memset(&ident, 0, sizeof(ident));
           ident.type = CL_GAMEIDENTIFIER_FILE_HASH;
           ident.library = "Wii U Virtual Console";
-          ident.filename[0] = '\0';
+          snprintf(ident.filename, sizeof(ident.filename), "%s", wups_state.title_name[0] ? wups_state.title_name : "Unknown N64 Title");
           ident.data = i;
           ident.size = size;
 
@@ -126,7 +126,7 @@ static int cl_wups_main(int argc, const char **argv)
           memset(&ident, 0, sizeof(ident));
           ident.type = CL_GAMEIDENTIFIER_FILE_HASH;
           ident.library = "Wii U Virtual Console";
-          ident.filename[0] = '\0';
+          snprintf(ident.filename, sizeof(ident.filename), "%s", wups_state.title_name[0] ? wups_state.title_name : "Unknown NDS Title");
           ident.data = data;
           ident.size = size;
 
@@ -152,8 +152,8 @@ static int cl_wups_main(int argc, const char **argv)
 
     memset(&ident, 0, sizeof(ident));
     ident.type = CL_GAMEIDENTIFIER_PRODUCT_CODE;
-    ident.library = "Wii U Virtual Console";
-    ident.filename[0] = '\0';
+    ident.library = "Wii U";
+    snprintf(ident.filename, sizeof(ident.filename), "%s", wups_state.title_name[0] ? wups_state.title_name : "Unknown Wii U Title");
     snprintf(ident.product, sizeof(ident.product), "%016llX", wups_state.title_id);
     snprintf(ident.version, sizeof(ident.version), "%u", wups_state.title_version);
 
@@ -167,7 +167,6 @@ static int cl_wups_main(int argc, const char **argv)
   {
     while (true)
     {
-      
       if (wups_settings.sync_method == CL_WUPS_SYNC_METHOD_TICKS)
         OSSleepTicks(OSNanosecondsToTicks(16666667));
       else
@@ -175,10 +174,6 @@ static int cl_wups_main(int argc, const char **argv)
 
       if (paused || error)
         continue;
-
-      /** @todo HACK! Implement new endianness type for the N64 situation */
-      if (wups_state.title_system == CL_WUPS_TITLE_N64 && memory.region_count)
-        memory.regions[0].endianness = CL_ENDIAN_BIG;
 
       if (pause_frames)
       {

@@ -44,15 +44,19 @@ bool cl_fe_install_membanks(void)
   cl_memory_region_t *region = nullptr;
   unsigned int data;
 
-  if (memory.region_count)
-    return true;
-  else if (title_is_n64())
+  if (memory.regions)
+    free(memory.regions);
+  
+  if (wups_state.title_system == CL_WUPS_TITLE_N64)
   {
     data = CL_WUPS_N64_RAMPTR;
     memory.regions = (cl_memory_region_t*)malloc(sizeof(cl_memory_region_t));
     region = &memory.regions[0];
     region->base_host = (void*)data;
     region->base_guest = 0x80000000;
+    region->endianness = CL_ENDIAN_BIG;
+    region->flags.bits.read = 1;
+    region->flags.bits.write = 1;
     region->size = 8 * 1024 * 1024;
     snprintf(region->title, sizeof(region->title), "%s", "Vessel RDRAM");
     memory.region_count = 1;
@@ -64,6 +68,9 @@ bool cl_fe_install_membanks(void)
     region = &memory.regions[0];
     region->base_host = (void*)data;
     region->base_guest = 0x02000000;
+    region->endianness = CL_ENDIAN_LITTLE;
+    region->flags.bits.read = 1;
+    region->flags.bits.write = 1;
     region->size = 4 * 1024 * 1024;
     snprintf(region->title, sizeof(region->title), "%s", "Hachihachi PSRAM");
     memory.region_count = 1;
@@ -75,6 +82,9 @@ bool cl_fe_install_membanks(void)
     region = &memory.regions[0];
     region->base_host = (void*)data;
     region->base_guest = data;
+    region->endianness = CL_ENDIAN_BIG;
+    region->flags.bits.read = 1;
+    region->flags.bits.write = 1;
     region->size = 1 * 1024 * 1024 * 1024;
     snprintf(region->title, sizeof(region->title), "%s", "CafeOS Foreground Process");
     memory.region_count = 1;

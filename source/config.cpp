@@ -120,14 +120,13 @@ void InitConfig(void)
   if (WUPSConfigAPI_Init(configOptions, ConfigMenuOpenedCallback, ConfigMenuClosedCallback) != WUPSCONFIG_API_RESULT_SUCCESS)
     DEBUG_FUNCTION_LINE_ERR("Failed to init config api");
 
-  if (((storageRes = WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_ENABLED, wups_settings.enabled, true)) != WUPS_STORAGE_ERROR_SUCCESS) ||
-      ((storageRes = WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_SYNC_METHOD, wups_settings.sync_method, CL_WUPS_SYNC_METHOD_TICKS)) != WUPS_STORAGE_ERROR_SUCCESS) ||
-      ((storageRes = WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_NETWORK_NOTIFICATIONS, wups_settings.network_notifications, true)) != WUPS_STORAGE_ERROR_SUCCESS) ||
-      ((storageRes = WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_USERNAME, wups_settings.user.username, sizeof(wups_settings.user.username), nullptr)) != WUPS_STORAGE_ERROR_SUCCESS) ||
-      ((storageRes = WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_PASSWORD, wups_settings.user.password, sizeof(wups_settings.user.password), nullptr)) != WUPS_STORAGE_ERROR_SUCCESS) ||
-      ((storageRes = WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_TOKEN, wups_settings.user.token, sizeof(wups_settings.user.token), nullptr)) != WUPS_STORAGE_ERROR_SUCCESS) ||
-      ((storageRes = WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_LANGUAGE, wups_settings.user.language, sizeof(wups_settings.user.language), nullptr)) != WUPS_STORAGE_ERROR_SUCCESS))
-    DEBUG_FUNCTION_LINE_ERR("Failed to get or store defaults");
+  WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_ENABLED, wups_settings.enabled, true);
+  WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_SYNC_METHOD, wups_settings.sync_method, CL_WUPS_SYNC_METHOD_TICKS);
+  WUPSStorageAPI::GetOrStoreDefault(CL_WUPS_CONFIG_NETWORK_NOTIFICATIONS, wups_settings.network_notifications, true);
+  WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_USERNAME, wups_settings.user.username, sizeof(wups_settings.user.username), nullptr);
+  WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_PASSWORD, wups_settings.user.password, sizeof(wups_settings.user.password), nullptr);
+  WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_TOKEN, wups_settings.user.token, sizeof(wups_settings.user.token), nullptr);
+  WUPSStorageAPI_GetString(nullptr, CL_WUPS_CONFIG_LANGUAGE, wups_settings.user.language, sizeof(wups_settings.user.language), nullptr);
 
   if ((storageRes = WUPSStorageAPI::SaveStorage()) != WUPS_STORAGE_ERROR_SUCCESS)
     DEBUG_FUNCTION_LINE_ERR("Failed to save storage %s (%d)", WUPSStorageAPI::GetStatusStr(storageRes).data(), storageRes);
@@ -301,6 +300,7 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
       cl_add_readonly(cat_debug, "Memory host base", "0x%08X", memory.regions[0].base_host);
       cl_add_readonly(cat_debug, "Memory guest base", "0x%08X", memory.regions[0].base_guest);
       cl_add_readonly(cat_debug, "Memory size", "0x%08X (%u MB)", memory.regions[0].size, memory.regions[0].size >> 20);
+      cl_add_readonly(cat_debug, "Memory endianness", "%s", memory.regions[0].endianness == CL_ENDIAN_BIG ? "Big" : "Little");
       snprintf(msg, sizeof(msg), "%08X %08X", ((uint32_t*)memory.regions[0].base_host)[0], ((uint32_t*)memory.regions[0].base_host)[1]);
       WUPSConfigItemStub_AddToCategory(cat_debug, msg);
     }
